@@ -84,8 +84,8 @@ static void test_lwgeom_wrapx(void)
 	CU_ASSERT_FATAL(ret != NULL);
 	obt_wkt = lwgeom_to_ewkt(ret);
 	tmp = lwgeom_from_wkt(
-					"MULTILINESTRING((0 0,8 0),(-2 0,0 0))",
-					LW_PARSER_CHECK_NONE);
+	        "MULTILINESTRING((0 0,8 0),(-2 0,0 0))",
+	        LW_PARSER_CHECK_NONE);
 	tmp2 = lwgeom_normalize(tmp);
 	lwgeom_free(tmp);
 	exp_wkt = lwgeom_to_ewkt(tmp2);
@@ -129,16 +129,16 @@ static void test_lwgeom_wrapx(void)
 	CU_ASSERT_FATAL(ret != NULL);
 	obt_wkt = lwgeom_to_ewkt(ret);
 	tmp = lwgeom_from_wkt("GEOMETRYCOLLECTION("
-							    "MULTIPOLYGON("
-							    "((22 0,20 0,20 10,22 10,22 4,22 2,22 0)),"
-							    "((2 10,10 10,10 0,2 0,2 2,4 2,4 4,2 4,2 10))"
-							    "),"
-							    "MULTIPOLYGON("
-							    "((22 11,20 11,20 21,22 21,22 15,22 13,22 11)),"
-							    "((2 21,10 21,10 11,2 11,2 13,4 13,4 15,2 15,2 21))"
-							    ")"
-							    ")",
-							    LW_PARSER_CHECK_NONE);
+                          "MULTIPOLYGON("
+                          "((22 0,20 0,20 10,22 10,22 4,22 2,22 0)),"
+                          "((2 10,10 10,10 0,2 0,2 2,4 2,4 4,2 4,2 10))"
+                          "),"
+                          "MULTIPOLYGON("
+                          "((22 11,20 11,20 21,22 21,22 15,22 13,22 11)),"
+                          "((2 21,10 21,10 11,2 11,2 13,4 13,4 15,2 15,2 21))"
+                          ")"
+                          ")",
+                          LW_PARSER_CHECK_NONE);
 	tmp2 = lwgeom_normalize(tmp);
 	lwgeom_free(tmp);
 	exp_wkt = lwgeom_to_ewkt(tmp2);
