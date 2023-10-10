@@ -46,7 +46,7 @@ SELECT
 		1, 1, 1
 	) = 255
 FROM raster_nmapalgebra_in
-WHERE rid IN (0, 1);
+WHERE rid IN (0, 1) ORDER BY rid;
 
 SELECT
 	rid,
@@ -58,7 +58,7 @@ SELECT
 		1, 1, 1
 	) = 255
 FROM raster_nmapalgebra_in
-WHERE rid IN (2,3,4);
+WHERE rid IN (2,3,4) ORDER BY rid;
 
 SELECT
 	rid,
@@ -74,7 +74,7 @@ SELECT
 		1, 1, 1
 	)::numeric, 2) = 3.14
 FROM raster_nmapalgebra_in
-WHERE rid IN (3,4);
+WHERE rid IN (3,4) ORDER BY rid;
 
 -- NOTE OFFSET 0 is in place to force PostgreSQL 12+ to materialized CTE as it did in older versions
 -- otherwise get extra notices
@@ -96,7 +96,7 @@ SELECT
 	(ST_Metadata(rast)),
 	(ST_BandMetadata(rast, 1)),
 	ST_Value(rast, 1, 1, 1)
-FROM foo;
+FROM foo ORDER BY rid;
 
 INSERT INTO raster_nmapalgebra_in
 	SELECT 10, ST_AddBand(ST_MakeEmptyRaster(2, 2, 0, 0, 1, -1, 0, 0, 0), 1, '16BUI', 1, 0) AS rast UNION ALL
