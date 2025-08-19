@@ -1,0 +1,5 @@
+35c35,36
+<     echo $CONFIG_LIBS
+---
+>     # For postgis static link, -lstdc++ is needed by el7
+>     echo $CONFIG_LIBS $CONFIG_DEP_LIBS -lstdc++
