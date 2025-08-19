@@ -70,6 +70,7 @@ my $OPT_UPGRADE_PATH = '';
 our $OPT_UPGRADE_FROM = '';
 my $OPT_UPGRADE_TO = '';
 my $VERBOSE = 0;
+my $OPT_SCHEMA = 'public';
 
 GetOptions (
 	'verbose' => \$VERBOSE,
@@ -83,7 +84,8 @@ GetOptions (
 	'raster' => \$OPT_WITH_RASTER,
 	'sfcgal' => \$OPT_WITH_SFCGAL,
 	'expect' => \$OPT_EXPECT,
-	'extensions' => \$OPT_EXTENSIONS
+	'extensions' => \$OPT_EXTENSIONS,
+	'schema=s' => \$OPT_SCHEMA
 	);
 
 if ( @ARGV < 1 )
@@ -294,9 +296,16 @@ sub create_upgrade_test_objects
 
   if ( $OPT_WITH_RASTER )
   {
-    $query = "insert into upgrade_test(r) ";
-    $query .= "select ST_AddBand(ST_MakeEmptyRaster(10, 10, 1, 1, 2, 2, 0, 0,4326), 1, '8BSI'::text, -129, NULL);";
-    $query .= "set client_min_messages to error; select AddRasterConstraints('upgrade_test', 'r')";
+    $query = "UPDATE upgrade_test SET r = ";
+    $query .= " ST_AddBand(ST_MakeEmptyRaster(10, 10, 1, 1, 2, 2, 0, 0,4326), 1, '8BSI'::text, -129, NULL);";
+    $ret = sql($query);
+    unless ( $ret =~ /^UPDATE/ ) {
+      `dropdb $DB`;
+      print "\nSomething went wrong setting raster into upgrade_test table: $ret.\n";
+      exit(1);
+    }
+
+    $query = "set client_min_messages to error; select AddRasterConstraints('upgrade_test', 'r')";
     $ret = sql($query);
     unless ( $ret =~ /^t$/ ) {
       `dropdb $DB`;
@@ -719,6 +728,7 @@ sub run_simple_test
           . " -v \"tmpfile='$tmpfile'\""
           . " -v \"scriptdir=$scriptdir\""
           . " -v \"regdir=$REGDIR\""
+          . " -v \"schema=$OPT_SCHEMA.\""
           . " -tXA $DB < $sql > $outfile 2>&1";
 	my $rv = system($cmd);
 

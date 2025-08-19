@@ -30,6 +30,9 @@
 #include <math.h>
 #include <limits.h>
 
+/** Max depth in a geometry. Matches the default YYINITDEPTH for WKT */
+#define LW_PARSER_MAX_DEPTH 200
+
 /**
 * Used for passing the parse state between the parsing functions.
 */
@@ -44,6 +47,7 @@ typedef struct
 	int has_z; /* Z? */
 	int has_m; /* M? */
 	int has_srid; /* SRID? */
+	uint8_t depth;      /* Current recursion level (to prevent stack overflows). Maxes at LW_PARSER_MAX_DEPTH */
 	const uint8_t *pos; /* Current parse position */
 } wkb_parse_state;
 
@@ -618,7 +622,12 @@ static LWCURVEPOLY* lwcurvepoly_from_wkb_state(wkb_parse_state *s)
 	{
 		geom = lwgeom_from_wkb_state(s);
 		if ( lwcurvepoly_add_ring(cp, geom) == LW_FAILURE )
+		{
+			lwgeom_free(geom);
+			lwgeom_free((LWGEOM *)cp);
 			lwerror("Unable to add geometry (%p) to curvepoly (%p)", geom, cp);
+			return NULL;
+		}
 	}
 
 	return cp;
@@ -650,15 +659,25 @@ static LWCOLLECTION* lwcollection_from_wkb_state(wkb_parse_state *s)
 	if ( s->lwtype == POLYHEDRALSURFACETYPE )
 		s->check |= LW_PARSER_CHECK_ZCLOSURE;
 
+	s->depth++;
+	if (s->depth >= LW_PARSER_MAX_DEPTH)
+	{
+		lwcollection_free(col);
+		lwerror("Geometry has too many chained collections");
+		return NULL;
+	}
 	for ( i = 0; i < ngeoms; i++ )
 	{
 		geom = lwgeom_from_wkb_state(s);
 		if ( lwcollection_add_lwgeom(col, geom) == NULL )
 		{
+			lwgeom_free(geom);
+			lwgeom_free((LWGEOM *)col);
 			lwerror("Unable to add geometry (%p) to collection (%p)", geom, col);
 			return NULL;
 		}
 	}
+	s->depth--;
 
 	return col;
 }
@@ -782,6 +801,7 @@ LWGEOM* lwgeom_from_wkb(const uint8_t *wkb, const size_t wkb_size, const char ch
 	s.has_m = LW_FALSE;
 	s.has_srid = LW_FALSE;
 	s.pos = wkb;
+	s.depth = 1;
 
 	return lwgeom_from_wkb_state(&s);
 }

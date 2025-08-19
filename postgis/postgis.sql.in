@@ -2078,7 +2078,7 @@ BEGIN
         IF upper(gc_old.type) = 'GEOMETRY' THEN
         -- This is an unconstrained geometry we need to do something
         -- We need to figure out what to set the type by inspecting the data
-            EXECUTE 'SELECT @extschema@.ST_srid(' || quote_ident(gcs.attname) || ') As srid, GeometryType(' || quote_ident(gcs.attname) || ') As type, @extschema@.ST_NDims(' || quote_ident(gcs.attname) || ') As dims ' ||
+            EXECUTE 'SELECT @extschema@.ST_srid(' || quote_ident(gcs.attname) || ') As srid, @extschema@.GeometryType(' || quote_ident(gcs.attname) || ') As type, @extschema@.ST_NDims(' || quote_ident(gcs.attname) || ') As dims ' ||
                      ' FROM ONLY ' || quote_ident(gcs.nspname) || '.' || quote_ident(gcs.relname) ||
                      ' WHERE ' || quote_ident(gcs.attname) || ' IS NOT NULL LIMIT 1;'
                 INTO gc;
@@ -5012,7 +5012,7 @@ CREATE OR REPLACE FUNCTION ST_GeomCollFromText(text, int4)
 	RETURNS geometry
 	AS '
 	SELECT CASE
-	WHEN geometrytype(@extschema@.ST_GeomFromText($1, $2)) = ''GEOMETRYCOLLECTION''
+	WHEN @extschema@.geometrytype(@extschema@.ST_GeomFromText($1, $2)) = ''GEOMETRYCOLLECTION''
 	THEN @extschema@.ST_GeomFromText($1,$2)
 	ELSE NULL END
 	'
@@ -5358,8 +5358,8 @@ AS $$
 DECLARE
 	geomtext alias for $1;
 	srid alias for $2;
-	mline geometry;
-	geom geometry;
+	mline @extschema@.geometry;
+	geom @extschema@.geometry;
 BEGIN
 	mline := @extschema@.ST_MultiLineStringFromText(geomtext, srid);
 
@@ -5370,7 +5370,7 @@ BEGIN
 
 	geom := @extschema@.ST_BuildArea(mline);
 
-	IF GeometryType(geom) != 'POLYGON'
+	IF @extschema@.GeometryType(geom) != 'POLYGON'
 	THEN
 		RAISE EXCEPTION 'Input returns more then a single polygon, try using BdMPolyFromText instead';
 	END IF;
@@ -5400,8 +5400,8 @@ AS $$
 DECLARE
 	geomtext alias for $1;
 	srid alias for $2;
-	mline geometry;
-	geom geometry;
+	mline @extschema@.geometry;
+	geom @extschema@.geometry;
 BEGIN
 	mline := @extschema@.ST_MultiLineStringFromText(geomtext, srid);
 
@@ -5450,89 +5450,91 @@ CREATE OR REPLACE FUNCTION postgis_type_name(geomname varchar, coord_dimension i
 	RETURNS varchar
 AS
 $$
- SELECT CASE WHEN $3 THEN new_name ELSE old_name END As geomname
+	SELECT CASE WHEN $3 THEN new_name ELSE old_name END As geomname
 	FROM
- 	( VALUES
- 		 ('GEOMETRY', 'Geometry', 2) ,
- 		 	('GEOMETRY', 'GeometryZ', 3) ,
- 		 	('GEOMETRY', 'GeometryZM', 4) ,
-			('GEOMETRYCOLLECTION', 'GeometryCollection', 2) ,
-			('GEOMETRYCOLLECTION', 'GeometryCollectionZ', 3) ,
-			('GEOMETRYCOLLECTIONM', 'GeometryCollectionM', 3) ,
-			('GEOMETRYCOLLECTION', 'GeometryCollectionZM', 4) ,
+	( VALUES
+			('GEOMETRY', 'Geometry', 2),
+			('GEOMETRY', 'GeometryZ', 3),
+			('GEOMETRYM', 'GeometryM', 3),
+			('GEOMETRY', 'GeometryZM', 4),
 
-			('POINT', 'Point',2) ,
-			('POINTM','PointM',3) ,
-			('POINT', 'PointZ',3) ,
-			('POINT', 'PointZM',4) ,
+			('GEOMETRYCOLLECTION', 'GeometryCollection', 2),
+			('GEOMETRYCOLLECTION', 'GeometryCollectionZ', 3),
+			('GEOMETRYCOLLECTIONM', 'GeometryCollectionM', 3),
+			('GEOMETRYCOLLECTION', 'GeometryCollectionZM', 4),
 
-			('MULTIPOINT','MultiPoint',2) ,
-			('MULTIPOINT','MultiPointZ',3) ,
-			('MULTIPOINTM','MultiPointM',3) ,
-			('MULTIPOINT','MultiPointZM',4) ,
+			('POINT', 'Point', 2),
+			('POINT', 'PointZ', 3),
+			('POINTM','PointM', 3),
+			('POINT', 'PointZM', 4),
 
-			('POLYGON', 'Polygon',2) ,
-			('POLYGON', 'PolygonZ',3) ,
-			('POLYGONM', 'PolygonM',3) ,
-			('POLYGON', 'PolygonZM',4) ,
+			('MULTIPOINT','MultiPoint', 2),
+			('MULTIPOINT','MultiPointZ', 3),
+			('MULTIPOINTM','MultiPointM', 3),
+			('MULTIPOINT','MultiPointZM', 4),
 
-			('MULTIPOLYGON', 'MultiPolygon',2) ,
-			('MULTIPOLYGON', 'MultiPolygonZ',3) ,
-			('MULTIPOLYGONM', 'MultiPolygonM',3) ,
-			('MULTIPOLYGON', 'MultiPolygonZM',4) ,
+			('POLYGON', 'Polygon', 2),
+			('POLYGON', 'PolygonZ', 3),
+			('POLYGONM', 'PolygonM', 3),
+			('POLYGON', 'PolygonZM', 4),
 
-			('MULTILINESTRING', 'MultiLineString',2) ,
-			('MULTILINESTRING', 'MultiLineStringZ',3) ,
-			('MULTILINESTRINGM', 'MultiLineStringM',3) ,
-			('MULTILINESTRING', 'MultiLineStringZM',4) ,
+			('MULTIPOLYGON', 'MultiPolygon', 2),
+			('MULTIPOLYGON', 'MultiPolygonZ', 3),
+			('MULTIPOLYGONM', 'MultiPolygonM', 3),
+			('MULTIPOLYGON', 'MultiPolygonZM', 4),
 
-			('LINESTRING', 'LineString',2) ,
-			('LINESTRING', 'LineStringZ',3) ,
-			('LINESTRINGM', 'LineStringM',3) ,
-			('LINESTRING', 'LineStringZM',4) ,
+			('MULTILINESTRING', 'MultiLineString', 2),
+			('MULTILINESTRING', 'MultiLineStringZ', 3),
+			('MULTILINESTRINGM', 'MultiLineStringM', 3),
+			('MULTILINESTRING', 'MultiLineStringZM', 4),
 
-			('CIRCULARSTRING', 'CircularString',2) ,
-			('CIRCULARSTRING', 'CircularStringZ',3) ,
-			('CIRCULARSTRINGM', 'CircularStringM',3) ,
-			('CIRCULARSTRING', 'CircularStringZM',4) ,
+			('LINESTRING', 'LineString', 2),
+			('LINESTRING', 'LineStringZ', 3),
+			('LINESTRINGM', 'LineStringM', 3),
+			('LINESTRING', 'LineStringZM', 4),
 
-			('COMPOUNDCURVE', 'CompoundCurve',2) ,
-			('COMPOUNDCURVE', 'CompoundCurveZ',3) ,
-			('COMPOUNDCURVEM', 'CompoundCurveM',3) ,
-			('COMPOUNDCURVE', 'CompoundCurveZM',4) ,
+			('CIRCULARSTRING', 'CircularString', 2),
+			('CIRCULARSTRING', 'CircularStringZ', 3),
+			('CIRCULARSTRINGM', 'CircularStringM' ,3),
+			('CIRCULARSTRING', 'CircularStringZM', 4),
 
-			('CURVEPOLYGON', 'CurvePolygon',2) ,
-			('CURVEPOLYGON', 'CurvePolygonZ',3) ,
-			('CURVEPOLYGONM', 'CurvePolygonM',3) ,
-			('CURVEPOLYGON', 'CurvePolygonZM',4) ,
+			('COMPOUNDCURVE', 'CompoundCurve', 2),
+			('COMPOUNDCURVE', 'CompoundCurveZ', 3),
+			('COMPOUNDCURVEM', 'CompoundCurveM', 3),
+			('COMPOUNDCURVE', 'CompoundCurveZM', 4),
 
-			('MULTICURVE', 'MultiCurve',2 ) ,
-			('MULTICURVE', 'MultiCurveZ',3 ) ,
-			('MULTICURVEM', 'MultiCurveM',3 ) ,
-			('MULTICURVE', 'MultiCurveZM',4 ) ,
+			('CURVEPOLYGON', 'CurvePolygon', 2),
+			('CURVEPOLYGON', 'CurvePolygonZ', 3),
+			('CURVEPOLYGONM', 'CurvePolygonM', 3),
+			('CURVEPOLYGON', 'CurvePolygonZM', 4),
 
-			('MULTISURFACE', 'MultiSurface', 2) ,
-			('MULTISURFACE', 'MultiSurfaceZ', 3) ,
-			('MULTISURFACEM', 'MultiSurfaceM', 3) ,
-			('MULTISURFACE', 'MultiSurfaceZM', 4) ,
+			('MULTICURVE', 'MultiCurve', 2),
+			('MULTICURVE', 'MultiCurveZ', 3),
+			('MULTICURVEM', 'MultiCurveM', 3),
+			('MULTICURVE', 'MultiCurveZM', 4),
 
-			('POLYHEDRALSURFACE', 'PolyhedralSurface',2) ,
-			('POLYHEDRALSURFACE', 'PolyhedralSurfaceZ',3) ,
-			('POLYHEDRALSURFACEM', 'PolyhedralSurfaceM',3) ,
-			('POLYHEDRALSURFACE', 'PolyhedralSurfaceZM',4) ,
+			('MULTISURFACE', 'MultiSurface', 2),
+			('MULTISURFACE', 'MultiSurfaceZ', 3),
+			('MULTISURFACEM', 'MultiSurfaceM', 3),
+			('MULTISURFACE', 'MultiSurfaceZM', 4),
 
-			('TRIANGLE', 'Triangle',2) ,
-			('TRIANGLE', 'TriangleZ',3) ,
-			('TRIANGLEM', 'TriangleM',3) ,
-			('TRIANGLE', 'TriangleZM',4) ,
+			('POLYHEDRALSURFACE', 'PolyhedralSurface', 2),
+			('POLYHEDRALSURFACE', 'PolyhedralSurfaceZ', 3),
+			('POLYHEDRALSURFACEM', 'PolyhedralSurfaceM', 3),
+			('POLYHEDRALSURFACE', 'PolyhedralSurfaceZM', 4),
+
+			('TRIANGLE', 'Triangle', 2),
+			('TRIANGLE', 'TriangleZ', 3),
+			('TRIANGLEM', 'TriangleM', 3),
+			('TRIANGLE', 'TriangleZM', 4),
 
 			('TIN', 'Tin', 2),
 			('TIN', 'TinZ', 3),
-			('TIN', 'TinM', 3),
+			('TINM', 'TinM', 3),
 			('TIN', 'TinZM', 4) )
 			 As g(old_name, new_name, coord_dimension)
-		WHERE (upper(old_name) = upper($1) OR upper(new_name) = upper($1))
-			AND coord_dimension = $2;
+	WHERE (upper(old_name) = upper($1) OR upper(new_name) = upper($1))
+		AND coord_dimension = $2;
 $$
 LANGUAGE 'sql' IMMUTABLE STRICT _PARALLEL COST 200;
 
@@ -5856,14 +5858,14 @@ CREATE OR REPLACE FUNCTION _st_concavehull(param_inputgeom geometry)
   RETURNS geometry AS
 $$
 	DECLARE
-	vexhull GEOMETRY;
-	var_resultgeom geometry;
-	var_inputgeom geometry;
-	vexring GEOMETRY;
-	cavering GEOMETRY;
-	cavept geometry[];
+	vexhull @extschema@.geometry;
+	var_resultgeom @extschema@.geometry;
+	var_inputgeom @extschema@.geometry;
+	vexring @extschema@.geometry;
+	cavering @extschema@.geometry;
+	cavept @extschema@.geometry[];
 	seglength double precision;
-	var_tempgeom geometry;
+	var_tempgeom @extschema@.geometry;
 	scale_factor float := 1;
 	i integer;
 	BEGIN
@@ -5920,7 +5922,7 @@ $$
 		-- make sure result covers original (#3638)
 		-- Using ST_UnaryUnion since SFCGAL doesn't replace with its own implementation
 		-- and SFCGAL one chokes for some reason
-		var_resultgeom := @extschema@.ST_UnaryUnion(ST_Collect(param_inputgeom, var_resultgeom) );
+		var_resultgeom := @extschema@.ST_UnaryUnion(@extschema@.ST_Collect(param_inputgeom, var_resultgeom) );
 		RETURN var_resultgeom;
 
 	END;
@@ -5932,18 +5934,18 @@ $$
 CREATE OR REPLACE FUNCTION ST_ConcaveHull(param_geom geometry, param_pctconvex float, param_allow_holes boolean DEFAULT false) RETURNS geometry AS
 $$
 	DECLARE
-		var_convhull geometry := @extschema@.ST_ForceSFS(@extschema@.ST_ConvexHull(param_geom));
-		var_param_geom geometry := @extschema@.ST_ForceSFS(param_geom);
+		var_convhull @extschema@.geometry := @extschema@.ST_ForceSFS(@extschema@.ST_ConvexHull(param_geom));
+		var_param_geom @extschema@.geometry := @extschema@.ST_ForceSFS(param_geom);
 		var_initarea float := @extschema@.ST_Area(var_convhull);
 		var_newarea float := var_initarea;
 		var_div integer := 6; /** this is the 1/var_div is the percent increase we will allow per geometry to keep speed decent **/
-		var_tempgeom geometry;
-		var_tempgeom2 geometry;
-		var_cent geometry;
-		var_geoms geometry[4]; /** We will cut the current geometry into 4 triangular quadrants along the centroid/extent **/
-		var_enline geometry;
-		var_resultgeom geometry;
-		var_atempgeoms geometry[];
+		var_tempgeom @extschema@.geometry;
+		var_tempgeom2 @extschema@.geometry;
+		var_cent @extschema@.geometry;
+		var_geoms @extschema@.geometry[4]; /** We will cut the current geometry into 4 triangular quadrants along the centroid/extent **/
+		var_enline @extschema@.geometry;
+		var_resultgeom @extschema@.geometry;
+		var_atempgeoms @extschema@.geometry[];
 		var_buf float := 1; /** tolerance so that geometries that are right on the extent don't get accidentally clipped off **/
 	BEGIN
 		-- We start with convex hull as our base

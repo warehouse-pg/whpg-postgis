@@ -300,6 +300,16 @@ fi
 AC_SUBST([MATHML2_DTD])
 
 dnl ===========================================================================
+dnl Detect if pkg-config installed
+dnl ===========================================================================
+# check for pkg-config
+PKG_PROG_PKG_CONFIG
+if test -z "$PKG_CONFIG"; then
+   AC_MSG_WARN([Cannot find pkg-config, make sure it is installed in your PATH])
+fi
+
+
+dnl ===========================================================================
 dnl Detect CUnit if it is installed (used for unit testing)
 dnl
 dnl Note that we pass any specified CPPFLAGS and LDFLAGS into the Makefile
@@ -570,13 +580,31 @@ AC_ARG_WITH([xml2config],
 	[AS_HELP_STRING([--with-xml2config=FILE], [specify an alternative xml2-config file])],
 	[XML2CONFIG="$withval"], [XML2CONFIG=""])
 
+XML2_LDFLAGS=""
+XML2_CPPFLAGS=""
+
 if test "x$XML2CONFIG" = "x"; then
 	dnl XML2CONFIG was not specified, so search within the current path
 	AC_PATH_PROG([XML2CONFIG], [xml2-config])
 
-	dnl If we couldn't find xml2-config, display a warning
+	dnl If we couldn't find xml2-config, display a warning if pkg-config fails too
 	if test "x$XML2CONFIG" = "x"; then
-		AC_MSG_ERROR([could not find xml2-config from libxml2 within the current path. You may need to try re-running configure with a --with-xml2config parameter.])
+		if test ! -z "$PKG_CONFIG"; then
+			PKG_CHECK_MODULES([LIBXML2], [libxml-2.0], [
+				XML2_CPPFLAGS="$LIBXML2_CFLAGS"
+				XML2_LDFLAGS="$LIBXML2_LIBS"
+				POSTGIS_LIBXML2_VERSION=`$PKG_CONFIG libxml-2.0 --modversion`
+			], [])
+		else
+			AC_MSG_ERROR([could not find xml2-config from libxml2 within the current path. You may need to try re-running configure with a --with-xml2config parameter.])
+		fi
+	else
+		dnl Extract the linker and include flags
+		XML2_LDFLAGS=`$XML2CONFIG --libs`
+		XML2_CPPFLAGS=`$XML2CONFIG --cflags`
+
+		dnl Extract the version
+		POSTGIS_LIBXML2_VERSION=`$XML2CONFIG --version`
 	fi
 else
 	dnl XML2CONFIG was specified; display a message to the user
@@ -585,16 +613,18 @@ else
 	else
 		if test -f $XML2CONFIG; then
 			AC_MSG_RESULT([Using user-specified xml2-config file: $XML2CONFIG])
+
+			dnl Extract the linker and include flags
+			XML2_LDFLAGS=`$XML2CONFIG --libs`
+			XML2_CPPFLAGS=`$XML2CONFIG --cflags`
+
+			dnl Extract the version
+			POSTGIS_LIBXML2_VERSION=`$XML2CONFIG --version`
 		else
 			AC_MSG_ERROR([the user-specified xml2-config file $XML2CONFIG does not exist])
 		fi
 	fi
 fi
-
-
-dnl Extract the linker and include flags
-XML2_LDFLAGS=`$XML2CONFIG --libs`
-XML2_CPPFLAGS=`$XML2CONFIG --cflags`
 
 
 dnl
@@ -618,10 +648,6 @@ case $host_os in
         fi
         ;;
 esac
-
-
-dnl Extract the version
-POSTGIS_LIBXML2_VERSION=`$XML2CONFIG --version`
 
 dnl Check headers file
 CPPFLAGS_SAVE="$CPPFLAGS"
@@ -924,22 +950,14 @@ AC_SUBST([HAVE_JSON])
 
 fi
 
-dnl ===========================================================================
-dnl Detect if pkg-config installed
-dnl ===========================================================================
-# check for pkg-config
-PKG_PROG_PKG_CONFIG
-if test -z "$PKG_CONFIG"; then
-   AC_MSG_WARN([Cannot find pkg-config, make sure it is installed in your PATH])
-fi
-
 
 dnl ===========================================================================
 dnl Detect if protobuf-c installed
 dnl ===========================================================================
 
 CHECK_PROTOBUF=yes
-HAVE_PROTOBUF=no
+HAVE_PROTOBUF=yes
+HAVE_GEOBUF=no
 
 AC_ARG_WITH([protobuf],
 	[AS_HELP_STRING([--without-protobuf], [build without protobuf-c support])],
@@ -948,71 +966,86 @@ AC_ARG_WITH([protobuf],
 dnl User didn't turn off protobuf support so...
 if test "$CHECK_PROTOBUF" != "no"; then
 
-    AC_ARG_WITH([protobufdir],
-    	[AS_HELP_STRING([--with-protobufdir=PATH], [specify the protobuf-c installation directory])],
-    	[PROTOBUFDIR="$withval"], [PROTOBUFDIR=])
+	dnl Need to find libdir, incdir and protoc-c compiler
 
-    dnl User specified the directory to find protobuf in, check that and
-    dnl fail if it doesn't work
-    if test ! "x$PROTOBUFDIR" = "x"; then
-    	dnl Make sure that the directory exists
-    	if test "x$PROTOBUFDIR" = "xyes"; then
-    		AC_MSG_ERROR([you must specify a parameter to --with-protobufdir, e.g. --with-protobufdir=/path/to])
-    	else
-    		AC_MSG_RESULT([Using user-specified protobuf-c directory: $PROTOBUFDIR])
+	CPPFLAGS_SAVE="$CPPFLAGS"
+	LDFLAGS_SAVE="$LDFLAGS"
 
-    		dnl Add the include directory to PROTOBUF_CPPFLAGS
-    		PROTOBUF_CPPFLAGS="-I$PROTOBUFDIR/include"
-    		PROTOBUF_LDFLAGS="-L$PROTOBUFDIR/lib"
-    	fi
+	dnl Try pkgconfig first
+	if test -n "$PKG_CONFIG"; then
+		dnl Ensure libprotobuf-c is of minimum required version
+		PKG_CHECK_MODULES([PROTOBUFC], [libprotobuf-c >= 1.0.0], [
+				PROTOBUF_CPPFLAGS="$PROTOBUFC_CFLAGS";
+				PROTOBUF_LDFLAGS="$PROTOBUFC_LIBS";
+			], [
+				AC_MSG_RESULT([libprotobuf-c not found in pkg-config])
+			])
+	fi
 
-        dnl Check that we can find the protobuf/protobuf.h header file
-        CPPFLAGS_SAVE="$CPPFLAGS"
-        CPPFLAGS="$PROTOBUF_CPPFLAGS"
-        AC_CHECK_HEADER([protobuf-c/protobuf-c.h], [],
-		    AC_MSG_ERROR([unable to find $PROTOBUFDIR/include/protobuf-c/protobuf-c.h])
-        )
-        CPPFLAGS="$CPPFLAGS_SAVE"
+	AC_ARG_WITH([protobufdir],
+		[AS_HELP_STRING([--with-protobufdir=PATH], [specify the protobuf-c installation directory])],[
+			if test "x$withval" = "xyes"; then
+				AC_MSG_ERROR([you must specify a parameter to --with-protobufdir, e.g. --with-protobufdir=/usr/local])
+			else
+				PROTOBUF_LDFLAGS="-L$withval/lib -lprotobuf-c";
+				PROTOBUF_CPPFLAGS="-I$withval/include"
+			fi
+		], [])
 
-        dnl Ensure we can link against libprotobuf-c
-        LIBS_SAVE="$LIBS"
-        LIBS="$PROTOBUF_LDFLAGS"
-        AC_CHECK_LIB([protobuf-c], [protobuf_c_message_check], [],
-            AC_MSG_ERROR([unable to link protobuf-c from $PROTOBUFDIR/lib])
-        )
-        HAVE_PROTOBUF=yes
-        PROTOBUF_LDFLAGS="-L$PROTOBUFDIR/lib -lprotobuf-c"
-        LIBS="$LIBS_SAVE"
+	if test -n "$PROTOBUF_CPPFLAGS"; then
+		CPPFLAGS="$PROTOBUF_CPPFLAGS"
+	fi
 
-    dnl No user-specified protobuf dir, try to find one using pkg-config
-    else
-        if test -z "$PKG_CONFIG"; then
-        	AC_MSG_WARN([Cannot find pkg-config, disabling protobuf support.])
-        	HAVE_PROTOBUF=no
-        else
-        	dnl Ensure libprotobuf-c is of minimum required version
-        	PKG_CHECK_MODULES([PROTOBUFC], [libprotobuf-c >= 1.1.0], [
-                    HAVE_PROTOBUF=yes;
-                    PROTOBUF_CPPFLAGS=$PROTOBUFC_CFLAGS;
-                    PROTOBUF_LDFLAGS=$PROTOBUFC_LIBS
-                ],
-                [HAVE_PROTOBUF=no])
-        fi
-    fi
+	if test -n "$PROTOBUF_LDFLAGS"; then
+		LDFLAGS="$PROTOBUF_LDFLAGS"
+	fi
 
-    if test "$HAVE_PROTOBUF" = "yes"; then
-    	AC_PATH_PROG(PROTOCC, protoc-c)
-    	if test "x$PROTOCC" = "x"; then
-    	  AC_MSG_WARN([Protobuf compiler missing, disabling protobuf support.])
-    	  HAVE_PROTOBUF=no
-    	else
-    	  AC_DEFINE([HAVE_LIBPROTOBUF], [1], [Define to 1 if libprotobuf-c is present])
-    	fi
-    fi
+	dnl confirm that discovered/configured include path works
+	AC_CHECK_HEADER([protobuf-c/protobuf-c.h], [],
+		AC_MSG_RESULT([unable to find protobuf-c/protobuf-c.h using $CPPFLAGS])
+		HAVE_PROTOBUF=no
+	)
 
+	dnl confirm that discovered/configured library path works
+	AC_CHECK_LIB([protobuf-c], [protobuf_c_message_init], [],
+		AC_MSG_RESULT([unable to link protobuf-c using $LDFLAGS])
+		HAVE_PROTOBUF=no
+	)
+
+	AC_CHECK_LIB([protobuf-c], [protobuf_c_version],
+		AC_DEFINE([HAVE_PROTOBUF_C_VERSION], [1], [Define to 1 if protobuf_c_version() is present]),
+		[])
+
+	AC_MSG_CHECKING([protobuf-c version])
+	AC_PROTOBUFC_VERSION([PROTOC_VERSION])
+	AC_MSG_RESULT([$PROTOC_VERSION])
+
+	CPPFLAGS="$CPPFLAGS_SAVE"
+	LDFLAGS="$LDFLAGS_SAVE"
+
+	dnl confirm that protobuf compiler is available
+	AC_PATH_PROG(PROTOCC, protoc-c)
+	if test -z "$PROTOCC"; then
+		AC_MSG_RESULT([Cannot find protoc-c protobuf compiler on the PATH: $PATH])
+		HAVE_PROTOBUF=no
+	fi
+
+	dnl all tests passed! turn on compile-time defines
+	if test "$HAVE_PROTOBUF" = "yes"; then
+		AC_DEFINE([HAVE_LIBPROTOBUF], [1], [Define to 1 if libprotobuf-c is present])
+		AC_DEFINE_UNQUOTED([LIBPROTOBUF_VERSION], [$PROTOC_VERSION], [Numeric version number for libprotobuf-c])
+		if test $PROTOC_VERSION -ge 1001000; then
+			AC_DEFINE([HAVE_GEOBUF], [1], [Define to 1 if libprotobuf is >= 1.1])
+			HAVE_GEOBUF=yes
+		fi
+	fi
+
+    AC_SUBST([HAVE_PROTOBUF])
+    AC_SUBST([HAVE_GEOBUF])
+    AC_SUBST([PROTOC_VERSION])
     AC_SUBST([PROTOBUF_CPPFLAGS])
     AC_SUBST([PROTOBUF_LDFLAGS])
-    AC_SUBST([HAVE_PROTOBUF])
+
 fi
 
 
@@ -1506,7 +1539,12 @@ AC_MSG_RESULT([  PROJ4 version:        ${POSTGIS_PROJ_VERSION}])
 AC_MSG_RESULT([  Libxml2 config:       ${XML2CONFIG}])
 AC_MSG_RESULT([  Libxml2 version:      ${POSTGIS_LIBXML2_VERSION}])
 AC_MSG_RESULT([  JSON-C support:       ${HAVE_JSON}])
+
 AC_MSG_RESULT([  protobuf-c support:   ${HAVE_PROTOBUF}])
+if test "x$HAVE_PROTOBUF" = "xyes"; then
+  AC_MSG_RESULT([  protobuf-c version:   ${PROTOC_VERSION}])
+fi
+
 AC_MSG_RESULT([  PCRE support:         ${HAVE_PCRE}])
 AC_MSG_RESULT([  Perl:                 ${PERL}])
 AC_MSG_RESULT()
