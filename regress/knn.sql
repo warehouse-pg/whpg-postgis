@@ -1,3 +1,5 @@
+SET client_min_messages TO WARNING;
+SET optimizer TO OFF;
 CREATE OR REPLACE FUNCTION qnodes(q text) RETURNS text
 LANGUAGE 'plpgsql' AS
 $$
@@ -96,3 +98,5 @@ select '<<->> ndcd5', 'POINTZM(1 2 3 4)'::geometry <<->>
                 'POINTZM(2 3 4 5)'::geometry; -- 2
 select '<<->> ndcd6', 'POINTZM(9 9 3 4)'::geometry <<->>
                 'POINT(9 8)'::geometry; -- 1, higher dimensions overlapping
+
+RESET optimizer;

@@ -44,7 +44,7 @@ FROM ST_SummaryStats(
 	)
 	, TRUE
 );
-SELECT count FROM ST_SummaryStats(
+SELECT count FROM (SELECT * FROM ST_SummaryStats(
 	ST_SetValue(
 		ST_SetValue(
 			ST_SetValue(
@@ -59,8 +59,8 @@ SELECT count FROM ST_SummaryStats(
 		, 1, 5, 5, 3.14159
 	)
 	, TRUE
-);
-SELECT count FROM ST_SummaryStats(
+))q1;
+SELECT count FROM (SELECT * FROM ST_SummaryStats(
 	ST_SetValue(
 		ST_SetValue(
 			ST_SetValue(
@@ -75,7 +75,7 @@ SELECT count FROM ST_SummaryStats(
 		, 1, 5, 5, 3.14159
 	)
 	, FALSE
-);
+))q1;
 SELECT round(mean::numeric, 3), round(stddev::numeric, 3) FROM ST_SummaryStats(
 	ST_SetValue(
 		ST_SetValue(
@@ -108,6 +108,7 @@ SELECT round(mean::numeric, 3), round(stddev::numeric, 3) FROM ST_SummaryStats(
 	)
 	, FALSE
 );
+SET client_min_messages TO WARNING;
 SELECT round(mean::numeric, 3), round(stddev::numeric, 3) FROM ST_SummaryStats(
 	ST_SetValue(
 		ST_SetValue(
@@ -124,6 +125,7 @@ SELECT round(mean::numeric, 3), round(stddev::numeric, 3) FROM ST_SummaryStats(
 	)
 	, 2
 );
+RESET client_min_messages;
 SELECT ST_ApproxSummaryStats(
 	ST_Clip(
 		ST_AddBand(
@@ -197,6 +199,7 @@ SELECT
 	round(max::numeric, 3)
 FROM ST_SummaryStats('test_summarystats', 'rast');
 SAVEPOINT test;
+SET client_min_messages TO WARNING;
 SELECT
 	count,
 	round(sum::numeric, 3),
@@ -205,6 +208,7 @@ SELECT
 	round(min::numeric, 3),
 	round(max::numeric, 3)
 FROM ST_SummaryStats('test_summarystats', 'rast', 2);
+RESET client_min_messages;
 ROLLBACK TO SAVEPOINT test;
 RELEASE SAVEPOINT test;
 SAVEPOINT test;

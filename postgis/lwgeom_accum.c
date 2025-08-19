@@ -361,15 +361,12 @@ pgis_geometry_clusterwithin_finalfn(PG_FUNCTION_ARGS)
 
 	if (PG_ARGISNULL(0))
 		PG_RETURN_NULL();
-
 	p = (pgis_abs*) PG_GETARG_POINTER(0);
 
 	if (!p->data)
 	{
-		elog(ERROR, "Tolerance not defined");
 		PG_RETURN_NULL();
 	}
-
 	geometry_array = pgis_accum_finalfn(p, CurrentMemoryContext, fcinfo);
 	result = PGISDirectFunctionCall2( cluster_within_distance_garray, geometry_array, p->data);
 	if (!result)
@@ -439,12 +436,12 @@ PGISDirectFunctionCall2(PGFunction func, Datum arg1, Datum arg2)
 	fcinfo.arg[1] = arg2;
 	fcinfo.argnull[0] = false;
 	fcinfo.argnull[1] = false;
-
 	result = (*func) (&fcinfo);
 
 	/* Check for null result, returning a "NULL" Datum if indicated */
-	if (fcinfo.isnull)
+	if (fcinfo.isnull){
 		return (Datum) 0;
+	}
 
 	return result;
 #else

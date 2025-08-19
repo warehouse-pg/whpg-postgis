@@ -3803,7 +3803,7 @@ CREATE OR REPLACE FUNCTION ST_Combine_BBox(box2d,geometry)
 -- Changed: 2.2.0 to use non-deprecated ST_CombineBBox (r13535)
 -- Changed: 2.3.0 to support PostgreSQL 9.6
 -- Changed: 2.3.1 to support PostgreSQL 9.6 parallel safe
-CREATE AGGREGATE ST_Extent(geometry) (
+CREATE ORDERED AGGREGATE ST_Extent(geometry) (
 	sfunc = ST_CombineBBox,
 	stype = box3d,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -3817,7 +3817,7 @@ CREATE AGGREGATE ST_Extent(geometry) (
 -- Changed: 2.2.0 to use non-deprecated ST_CombineBBox (r13535)
 -- Changed: 2.3.0 to support PostgreSQL 9.6
 -- Changed: 2.3.1 to support PostgreSQL 9.6 parallel safe
-CREATE AGGREGATE ST_3DExtent(geometry)(
+CREATE ORDERED AGGREGATE ST_3DExtent(geometry)(
 	sfunc = ST_CombineBBox,
 #if POSTGIS_PGSQL_VERSION >= 96
 	combinefunc = ST_CombineBBox,
@@ -3835,7 +3835,7 @@ CREATE OR REPLACE FUNCTION ST_Collect(geom1 geometry, geom2 geometry)
 -- Availability: 1.2.2
 -- Changed: 2.3.0 to support PostgreSQL 9.6
 -- Changed: 2.3.1 to support PostgreSQL 9.6 parallel safe
-CREATE AGGREGATE ST_MemCollect(geometry)(
+CREATE ORDERED AGGREGATE ST_MemCollect(geometry)(
 	sfunc = ST_collect,
 #if POSTGIS_PGSQL_VERSION >= 96
 	combinefunc = ST_collect,
@@ -3853,7 +3853,7 @@ CREATE OR REPLACE FUNCTION ST_Collect(geometry[])
 -- Availability: 1.2.2
 -- Changed: 2.3.0 to support PostgreSQL 9.6
 -- Changed: 2.3.1 to support PostgreSQL 9.6 parallel safe
-CREATE AGGREGATE ST_MemUnion(geometry) (
+CREATE ORDERED AGGREGATE ST_MemUnion(geometry) (
 	sfunc = ST_Union,
 #if POSTGIS_PGSQL_VERSION >= 96
 	combinefunc = ST_Union,
@@ -3936,7 +3936,7 @@ CREATE OR REPLACE FUNCTION pgis_geometry_makeline_finalfn(internal)
 -- Availability: 1.2.2
 -- Changed: 2.4.0 marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_Accum (geometry) (
+CREATE ORDERED AGGREGATE ST_Accum (geometry) (
 	sfunc = pgis_geometry_accum_transfn,
 	stype = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -3956,7 +3956,7 @@ CREATE OR REPLACE FUNCTION ST_Union (geometry[])
 -- we don't want to force drop of this agg since its often used in views
 -- parallel handling dealt with in postgis_drop_after.sql
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_Union (geometry) (
+CREATE ORDERED AGGREGATE ST_Union (geometry) (
 	sfunc = pgis_geometry_accum_transfn,
 	stype = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -3968,7 +3968,7 @@ CREATE AGGREGATE ST_Union (geometry) (
 -- Availability: 1.2.2
 -- Changed: 2.4.0: marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_Collect (geometry) (
+CREATE ORDERED AGGREGATE ST_Collect (geometry) (
 	SFUNC = pgis_geometry_accum_transfn,
 	STYPE = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -3980,7 +3980,7 @@ CREATE AGGREGATE ST_Collect (geometry) (
 -- Availability: 2.2
 -- Changed: 2.4.0: marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_ClusterIntersecting (geometry) (
+CREATE ORDERED AGGREGATE ST_ClusterIntersecting (geometry) (
 	SFUNC = pgis_geometry_accum_transfn,
 	STYPE = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -3992,7 +3992,7 @@ CREATE AGGREGATE ST_ClusterIntersecting (geometry) (
 -- Availability: 2.2
 -- Changed: 2.4.0 marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_ClusterWithin (geometry, float8) (
+CREATE ORDERED AGGREGATE ST_ClusterWithin (geometry, float8) (
 	SFUNC = pgis_geometry_accum_transfn,
 	STYPE = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -4004,7 +4004,7 @@ CREATE AGGREGATE ST_ClusterWithin (geometry, float8) (
 -- Availability: 1.2.2
 -- Changed: 2.4.0 marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_Polygonize (geometry) (
+CREATE ORDERED AGGREGATE ST_Polygonize (geometry) (
 	SFUNC = pgis_geometry_accum_transfn,
 	STYPE = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -4016,7 +4016,7 @@ CREATE AGGREGATE ST_Polygonize (geometry) (
 -- Availability: 1.2.2
 -- Changed: 2.4.0 marked parallel safe
 -- Changed: 2.5.0 use 'internal' stype
-CREATE AGGREGATE ST_MakeLine (geometry) (
+CREATE ORDERED AGGREGATE ST_MakeLine (geometry) (
 	SFUNC = pgis_geometry_accum_transfn,
 	STYPE = internal,
 #if POSTGIS_PGSQL_VERSION >= 96
@@ -4518,7 +4518,7 @@ CREATE OR REPLACE FUNCTION pgis_asmvt_deserialfn(bytea, internal)
 
 -- Availability: 2.4.0
 -- Changed: 2.5.0
-CREATE AGGREGATE ST_AsMVT(anyelement)
+CREATE ORDERED AGGREGATE ST_AsMVT(anyelement)
 (
 	sfunc = pgis_asmvt_transfn,
 	stype = internal,
@@ -4533,7 +4533,7 @@ CREATE AGGREGATE ST_AsMVT(anyelement)
 
 -- Availability: 2.4.0
 -- Changed: 2.5.0
-CREATE AGGREGATE ST_AsMVT(anyelement, text)
+CREATE ORDERED AGGREGATE ST_AsMVT(anyelement, text)
 (
 	sfunc = pgis_asmvt_transfn,
 	stype = internal,
@@ -4548,7 +4548,7 @@ CREATE AGGREGATE ST_AsMVT(anyelement, text)
 
 -- Availability: 2.4.0
 -- Changed: 2.5.0
-CREATE AGGREGATE ST_AsMVT(anyelement, text, int4)
+CREATE ORDERED AGGREGATE ST_AsMVT(anyelement, text, int4)
 (
 	sfunc = pgis_asmvt_transfn,
 	stype = internal,
@@ -4563,7 +4563,7 @@ CREATE AGGREGATE ST_AsMVT(anyelement, text, int4)
 
 -- Availability: 2.4.0
 -- Changed: 2.5.0
-CREATE AGGREGATE ST_AsMVT(anyelement, text, int4, text)
+CREATE ORDERED AGGREGATE ST_AsMVT(anyelement, text, int4, text)
 (
 	sfunc = pgis_asmvt_transfn,
 	stype = internal,
@@ -4612,7 +4612,7 @@ CREATE OR REPLACE FUNCTION pgis_asgeobuf_finalfn(internal)
 	LANGUAGE 'c' IMMUTABLE _PARALLEL;
 
 -- Availability: 2.4.0
-CREATE AGGREGATE ST_AsGeobuf(anyelement)
+CREATE ORDERED AGGREGATE ST_AsGeobuf(anyelement)
 (
 	sfunc = pgis_asgeobuf_transfn,
 	stype = internal,
@@ -4623,7 +4623,7 @@ CREATE AGGREGATE ST_AsGeobuf(anyelement)
 );
 
 -- Availability: 2.4.0
-CREATE AGGREGATE ST_AsGeobuf(anyelement, text)
+CREATE ORDERED AGGREGATE ST_AsGeobuf(anyelement, text)
 (
 	sfunc = pgis_asgeobuf_transfn,
 	stype = internal,

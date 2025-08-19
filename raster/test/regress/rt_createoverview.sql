@@ -6,7 +6,9 @@ CREATE TABLE res1 AS SELECT
     , 1, '8BUI', 0, 0
   ) r
 FROM generate_series(-170, 160, 10) x,
-     generate_series(80, -70, -10) y;
+     generate_series(80, -70, -10) y
+DISTRIBUTED REPLICATED;
+
 SELECT addrasterconstraints('res1', 'r');
 
 SELECT ST_CreateOverview('res1', 'r', 2)::text = 'o_2_res1';
@@ -66,7 +68,8 @@ CREATE TABLE oschm.res1 AS SELECT
     , 1, '8BUI', 0, 0
   ) r
 FROM generate_series(100, 270, 10) x,
-     generate_series(140, -30, -10) y;
+     generate_series(140, -30, -10) y
+DISTRIBUTED REPLICATED;
 SELECT addrasterconstraints('oschm'::name,'res1'::name, 'r'::name);
 
 -- add overview with explicit schema

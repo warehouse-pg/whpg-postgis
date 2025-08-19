@@ -1,7 +1,8 @@
+SET client_min_messages = NOTICE;
 CREATE TABLE raster_raster2world (
 	rid integer,
 	rast raster
-);
+) DISTRIBUTED BY (rid);
 CREATE OR REPLACE FUNCTION make_test_raster(
 	rid integer,
 	width integer DEFAULT 2,
@@ -48,106 +49,107 @@ DROP FUNCTION make_test_raster(integer, integer, integer, double precision, doub
 SELECT
 	rid,
 	(ST_RasterToWorldCoord(rast, 1, 1)).*
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	(ST_RasterToWorldCoord(rast, 1, 2)).*
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	(ST_RasterToWorldCoord(rast, 2, 2)).*
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	(ST_RasterToWorldCoord(rast, 0, 0)).*
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	(ST_RasterToWorldCoord(rast, -1, 0)).*
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 1, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 1, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 2, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 0, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, -1, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordX(rast, -1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 1, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 1, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 2, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 0, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, -1, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 2)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, 0)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 SELECT
 	rid,
 	ST_RasterToWorldCoordY(rast, -1)
-FROM raster_raster2world;
+FROM raster_raster2world order by rid;
 
 DROP TABLE raster_raster2world;
+RESET client_min_messages;

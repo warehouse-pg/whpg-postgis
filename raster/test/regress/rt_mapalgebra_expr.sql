@@ -430,7 +430,7 @@ FROM (
 		ST_Value(rast, 1, 1, 1) AS firstvalue,
 		ST_Value(rast, 1, ST_Width(rast), ST_Height(rast)) AS lastvalue
 	FROM raster_mapalgebra_out
-) AS r;
+) AS r ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
 
 DROP TABLE IF EXISTS raster_mapalgebra;
 DROP TABLE IF EXISTS raster_mapalgebra_out;

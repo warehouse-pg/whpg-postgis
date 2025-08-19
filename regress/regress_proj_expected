@@ -10,7 +10,4 @@ ERROR:  Input geometry has unknown (0) SRID (lwgeom_transform.c:69)
 9|POINT(574600 5316780)
 10|POINT(574600 5316780)
 11|SRID=100001;POINT(574600 5316780)
-initialization list
-ERROR:  transform_geom: couldn't parse proj4 output string: 'invalid projection': no arguments in
-initialization list (lwgeom_transform.c:170)  (seg2 slice1 10.128.0.9:25434 pid=14114) (lwgeom_tran
-sform.c:170)
+ERROR:  transform_geom: couldn't parse proj4 output string: 'invalid projection': no arguments in initialization list

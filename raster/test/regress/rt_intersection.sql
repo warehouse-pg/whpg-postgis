@@ -139,7 +139,7 @@ FROM (
 		ST_Value(rast, 1, 1, 1) AS firstvalue,
 		ST_Value(rast, 1, ST_Width(rast), ST_Height(rast)) AS lastvalue
 	FROM raster_intersection_out
-) AS r;
+) AS r ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 , 13, 14, 15;
 
 -- Display the pixels and the values of the resulting rasters
 SELECT

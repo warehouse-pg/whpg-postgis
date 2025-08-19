@@ -2558,10 +2558,14 @@ Datum _postgis_gserialized_index_extent(PG_FUNCTION_ARGS)
 	if (!idx_oid)
 		PG_RETURN_NULL();
 
+	elog(WARNING, "idx_oid: %u", idx_oid);
 	gbox = spatial_index_read_extent(idx_oid, key_type);
-	if (!gbox)
+	if (!gbox){
 		PG_RETURN_NULL();
-	else
+	}
+	else{
+		elog(WARNING, "got pointer");
 		PG_RETURN_POINTER(gbox);
+	}
 }
 

@@ -288,6 +288,7 @@ SELECT
 	round(percent::numeric, 3)
 FROM ST_Histogram('test_histogram', 'rast', 1, 3, FALSE);
 SAVEPOINT test;
+SET client_min_messages TO ERROR;
 SELECT
 	round(min::numeric, 3),
 	round(max::numeric, 3),
@@ -296,6 +297,7 @@ SELECT
 FROM ST_Histogram('test_histogram', 'rast', 2, TRUE, 0, NULL, FALSE);
 ROLLBACK TO SAVEPOINT test;
 RELEASE SAVEPOINT test;
+RESET client_min_messages;
 SAVEPOINT test;
 SELECT
 	round(min::numeric, 3),

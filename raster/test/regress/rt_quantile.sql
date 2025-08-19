@@ -1,3 +1,4 @@
+SET optimizer to OFF;
 SELECT
 	round(quantile::numeric, 3),
 	round(value::numeric, 3)
@@ -289,3 +290,5 @@ SELECT round(ST_Quantile('test_quantile', 'rast', -1.)::numeric, 3);
 ROLLBACK TO SAVEPOINT test;
 RELEASE SAVEPOINT test;
 ROLLBACK;
+
+RESET optimizer;

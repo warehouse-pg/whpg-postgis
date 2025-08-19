@@ -225,34 +225,42 @@ FROM ST_BandMetadata((SELECT rast FROM raster_outdb_template WHERE rid = 4), ARR
 -- #3020
 SET postgis.gdal_enabled_drivers = 'GTiff';
 SET postgis.enable_outdb_rasters = true;
-WITH foo AS (
+
+CREATE TABLE foo1 AS
 	SELECT
 			path
 	FROM ST_BandMetadata(
 		(SELECT rast FROM raster_outdb_template WHERE rid = 1),
 	 	ARRAY[]::int[]
 	)
-	LIMIT 1
-), raster as (
-SELECT
-	ST_AddBand(
-		ST_MakeEmptyRaster(90, 90, 0., 0., 1, -1, 0, 0, 0),
-		1, foo.path, NULL::int[]
-	) AS rast
-FROM foo
-)
+	LIMIT 1 DISTRIBUTED REPLICATED;
+
+SET postgis.gdal_enabled_drivers = 'GTiff';
+SET postgis.enable_outdb_rasters = true;
+CREATE TABLE raster1 AS
+	SELECT
+		ST_AddBand(
+			ST_MakeEmptyRaster(90, 90, 0., 0., 1, -1, 0, 0, 0),
+			1, foo1.path, NULL::int[]
+		) AS rast
+	FROM foo1;
+
+SET postgis.gdal_enabled_drivers = 'GTiff';
+SET postgis.enable_outdb_rasters = true;
 SELECT
 	ST_Value(rast, 1, 1)
-FROM raster
+FROM raster1
 UNION ALL
 SELECT
 	ST_Value(rast, 6, 45)
-FROM raster
+FROM raster1
 UNION ALL
 SELECT
 	ST_Value(rast, 90, 50)
-FROM raster
+FROM raster1
 UNION ALL
 SELECT
 	ST_Value(rast, 100, 100)
-FROM raster
+FROM raster1;
+
+DROP TABLE raster1;

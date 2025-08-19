@@ -119,7 +119,8 @@ FROM (
 		(ST_Metadata(rast)).*,
 		(ST_BandMetadata(rast, 1)).*
 	FROM raster_clip_out
-) AS r;
+) AS r
+ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
 
 -- Display the pixels and the values of the resulting rasters (raster 1)
 SELECT

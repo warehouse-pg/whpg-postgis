@@ -76,16 +76,6 @@ BEGIN
 -5.619|-1.239|0|0.000
 -1.239|3.142|10|0.500
 SAVEPOINT
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
-NOTICE:  Raster does not have band at index 2. Skipping raster
 ERROR:  RASTER_histogramCoverage: Cannot get summary stats of coverage
 COMMIT
 RELEASE

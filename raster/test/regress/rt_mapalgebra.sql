@@ -34,8 +34,6 @@ CREATE OR REPLACE FUNCTION raster_nmapalgebra_test(
 	END;
 	$$ LANGUAGE 'plpgsql' IMMUTABLE;
 
-SET client_min_messages TO notice;
-
 SELECT
 	rid,
 	ST_Value(
@@ -114,7 +112,7 @@ INSERT INTO raster_nmapalgebra_in
 DO $$ DECLARE r record;
 BEGIN
 -- this ONLY works for PostgreSQL version 9.1 or higher
-IF array_to_string(regexp_matches(split_part(version(), ' ', 2), E'([0-9]+)\.([0-9]+)'), '')::int > 90 THEN
+IF array_to_string(regexp_matches(split_part(version(), ' ', 2), E'([0-9]+)\.([0-9]+)'), '')::int > 95 THEN
 	WITH foo AS (
 		SELECT
 			t1.rid,
@@ -726,3 +724,5 @@ WHERE rid IN (2);
 DROP FUNCTION IF EXISTS raster_nmapalgebra_test(double precision[], int[], text[]);
 DROP FUNCTION IF EXISTS raster_nmapalgebra_test_bad_return(double precision[], int[], text[]);
 DROP TABLE IF EXISTS raster_nmapalgebra_in;
+
+RESET client_min_messages;

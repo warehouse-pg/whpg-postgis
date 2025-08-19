@@ -10,7 +10,7 @@
 CREATE TABLE "test" (
 	"num" bigint,
 	"the_geom" geometry
-);
+) DISTRIBUTED BY(num);
 
 --
 -- Data for TOC Entry ID 4 (OID 2231457)

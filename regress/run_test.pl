@@ -49,7 +49,7 @@ our $REGDIR = abs_path(dirname($0));
 our $SHP2PGSQL = $REGDIR . "/../loader/shp2pgsql";
 our $PGSQL2SHP = $REGDIR . "/../loader/pgsql2shp";
 our $RASTER2PGSQL = $REGDIR . "/../raster/loader/raster2pgsql";
-our $sysdiff = !system("/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
+our $sysdiff = !system("/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
 
 ##################################################################
 # Parse command line opts
@@ -745,6 +745,7 @@ sub run_simple_test
 	@lines = grep(!/^(LOG|SET|TRUNCATE|DISCARD)/, @lines);
 	@lines = grep(!/^LINE \d/, @lines);
 	@lines = grep(!/^\s+$/, @lines);
+    @lines = grep(!/NOTICE:  Table doesn't have 'distributed by' clause/i, @lines);
 
 	# Morph values into expected forms
 	for ( my $i = 0; $i < @lines; $i++ )
@@ -1216,7 +1217,8 @@ sub run_raster_loader_test
 sub count_db_objects
 {
 	my $count = sql("WITH counts as (
-		select count(*) from pg_type union all
+		select count(*) from pg_type
+            where typname NOT LIKE '__%' union all
 		select count(*) from pg_proc union all
 		select count(*) from pg_cast union all
 		select count(*) from pg_aggregate union all
@@ -1675,9 +1677,9 @@ sub diff
 	my $diffstr = '';
 
 	if ( $sysdiff ) {
-		
+
 		#$diffstr = `diff --strip-trailing-cr -u $expected_file $obtained_file 2>&1`;
-		$diffstr = `/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
+		$diffstr = `/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
 
 		return $diffstr;
 	}

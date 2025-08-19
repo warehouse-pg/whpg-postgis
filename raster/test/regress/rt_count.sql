@@ -1,3 +1,5 @@
+SET optimizer to OFF;
+
 SELECT ST_Count(
 	ST_SetValue(
 		ST_SetValue(
@@ -111,3 +113,5 @@ ROLLBACK TO SAVEPOINT test;
 RELEASE SAVEPOINT test;
 
 ROLLBACK;
+
+RESET optimizer;

@@ -35,6 +35,9 @@
 Datum RASTER_in(PG_FUNCTION_ARGS);
 Datum RASTER_out(PG_FUNCTION_ARGS);
 
+Datum RASTER_recv(PG_FUNCTION_ARGS);
+Datum RASTER_send(PG_FUNCTION_ARGS);
+
 Datum RASTER_to_bytea(PG_FUNCTION_ARGS);
 
 /** obsolete as of 2.5.0 stubbing for smoother upgrade from 2.4 **/
@@ -117,6 +120,81 @@ Datum RASTER_out(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(pgraster, 0);
 
 	PG_RETURN_CSTRING(hexwkb);
+}
+
+ /**
+ * Given a wkb string, convert it to a RASTER structure
+ */
+PG_FUNCTION_INFO_V1(RASTER_recv);
+Datum RASTER_recv(PG_FUNCTION_ARGS)
+{
+	StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
+	rt_raster raster;
+	void *result = NULL;
+
+	POSTGIS_RT_DEBUG(3, "Starting");
+
+	raster = rt_raster_from_wkb((uint8_t*)buf->data, buf->len);
+	if (raster == NULL)
+		PG_RETURN_NULL();
+
+	/* Set cursor to the end of buffer (so the backend is happy) */
+	buf->cursor = buf->len;
+
+	result = rt_raster_serialize(raster);
+	rt_raster_destroy(raster);
+	if (result == NULL)
+		PG_RETURN_NULL();
+
+	SET_VARSIZE(result, ((rt_pgraster*)result)->size);
+	PG_RETURN_POINTER(result);
+}
+
+/**
+ * Given a RASTER structure, convert it to a wkb object
+ */
+PG_FUNCTION_INFO_V1(RASTER_send);
+Datum RASTER_send(PG_FUNCTION_ARGS)
+{
+	rt_pgraster *pgraster = NULL;
+	rt_raster raster = NULL;
+	uint8_t *wkb = NULL;
+	uint32_t wkb_size = 0;
+	bytea *result = NULL;
+	int result_size = 0;
+
+	if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+	pgraster = (rt_pgraster *) PG_DETOAST_DATUM(PG_GETARG_DATUM(0));
+
+	/* Get raster object */
+	raster = rt_raster_deserialize(pgraster, FALSE);
+	if (!raster) {
+		PG_FREE_IF_COPY(pgraster, 0);
+		elog(ERROR, "RASTER_to_bytea: Could not deserialize raster");
+		PG_RETURN_NULL();
+	}
+
+	/* Parse raster to wkb object */
+	wkb = rt_raster_to_wkb(raster, FALSE, &wkb_size);
+	if (!wkb) {
+		rt_raster_destroy(raster);
+		PG_FREE_IF_COPY(pgraster, 0);
+		elog(ERROR, "RASTER_to_bytea: Could not allocate and generate WKB data");
+		PG_RETURN_NULL();
+	}
+
+	/* Create varlena object */
+	result_size = wkb_size + VARHDRSZ;
+	result = (bytea *)palloc(result_size);
+	SET_VARSIZE(result, result_size);
+	memcpy(VARDATA(result), wkb, VARSIZE(result) - VARHDRSZ);
+
+	/* Free raster objects used */
+	rt_raster_destroy(raster);
+	pfree(wkb);
+	PG_FREE_IF_COPY(pgraster, 0);
+
+	PG_RETURN_POINTER(result);
 }
 
 /**

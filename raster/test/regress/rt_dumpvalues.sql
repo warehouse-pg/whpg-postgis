@@ -87,14 +87,14 @@ SELECT
 	rid,
 	(ST_DumpValues(rast)).*
 FROM raster_dumpvalues
-ORDER BY rid;
+ORDER BY 1,2;
 
 SELECT
 	rid,
 	(ST_DumpValues(rast, ARRAY[3,2,1])).*
 FROM raster_dumpvalues
 WHERE rid > 20
-ORDER BY rid;
+ORDER BY 1,2 DESC;
 
 DROP TABLE IF EXISTS raster_dumpvalues;
 
