@@ -1,0 +1,4 @@
+33489c33489
+<       GEOS_LIBS="`${GEOS_CONFIG} --ldflags` -lgeos_c"
+---
+>       GEOS_LIBS="`${GEOS_CONFIG} --static-clibs`"

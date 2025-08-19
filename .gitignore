@@ -179,3 +179,7 @@ postgis/uninstall_sfcgal.sql
 *.ll
 postgis_revision.h
 ChangeLog
+
+# WHPG
+whpg/3rdparty/download
+build/
