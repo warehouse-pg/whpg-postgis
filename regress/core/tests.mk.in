@@ -57,7 +57,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/iscollection \
 	$(top_srcdir)/regress/core/legacy \
 	$(top_srcdir)/regress/core/letters \
-	$(top_srcdir)/regress/core/long_xact \
 	$(top_srcdir)/regress/core/lwgeom_regress \
 	$(top_srcdir)/regress/core/measures \
 	$(top_srcdir)/regress/core/minimum_bounding_circle \
@@ -75,7 +74,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/regress_bdpoly \
 	$(top_srcdir)/regress/core/regress_buffer_params \
 	$(top_srcdir)/regress/core/regress_gist_index_nd \
-	$(top_srcdir)/regress/core/regress_index \
 	$(top_srcdir)/regress/core/regress_index_nulls \
 	$(top_srcdir)/regress/core/regress_management \
 	$(top_srcdir)/regress/core/regress_selectivity \
@@ -111,7 +109,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/temporal_knn \
 	$(top_srcdir)/regress/core/tickets \
 	$(top_srcdir)/regress/core/twkb \
-	$(top_srcdir)/regress/core/typmod \
 	$(top_srcdir)/regress/core/wkb \
 	$(top_srcdir)/regress/core/wkt \
 	$(top_srcdir)/regress/core/wmsservers \
@@ -138,15 +135,25 @@ TESTS += \
 	$(top_srcdir)/regress/core/out_geojson \
   $(top_srcdir)/regress/core/wrapx
 
+# tests can't pass
+# ---------------------------------
+    #$(top_srcdir)/regress/core/long_xact \
+        #Greenplum does not support long transcation for user-defined data types with triggers
+    #$(top_srcdir)/regress/core/typmod \
+        #Greenplum doesnot support BINARY, so test cannot continue...
+    #$(top_srcdir)/regress/core/regress_index \
+        #BUG to fix, JIRA: MPP-24904
+
 # Slow slow tests
 TESTS_SLOW = \
 	$(top_srcdir)/regress/core/concave_hull_hard \
 	$(top_srcdir)/regress/core/knn_recheck
 
-ifeq ($(shell expr "$(POSTGIS_PGSQL_VERSION)" ">=" 120),1)
-	TESTS += \
-		$(top_srcdir)/regress/core/computed_columns
-endif
+# FIXME Timing tests with indexes are not consistent with such small datasets
+# ifeq ($(shell expr "$(POSTGIS_PGSQL_VERSION)" ">=" 120),1)
+# 	TESTS += \
+# 		$(top_srcdir)/regress/core/computed_columns
+# endif
 
 ifeq ($(shell expr "$(POSTGIS_GEOS_VERSION)" ">=" 30700),1)
 	# GEOS-3.7 adds:

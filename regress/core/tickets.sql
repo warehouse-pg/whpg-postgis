@@ -310,7 +310,7 @@ SELECT '#677.deprecated',round(ST_DistanceSpheroid(ST_GeomFromEWKT('MULTIPOLYGON
 SELECT '#677',round(ST_DistanceSpheroid(ST_GeomFromEWKT('MULTIPOLYGON(((-10 40,-10 55,-10 70,5 40,-10 40)))'), ST_GeomFromEWKT('MULTIPOINT(20 40,20 55,20 70,35 40,35 55,35 70,50 40,50 55,50 70)'), 'SPHEROID["GRS_1980",6378137,298.257222101]')) As result;
 
 -- #680 --
-SELECT '#680', encode(ST_AsBinary(geography(foo1.the_geom),'ndr'),'hex') As result FROM ((SELECT ST_SetSRID(ST_MakePointM(i,j,m),4326) As the_geom FROM generate_series(-10,50,10) As i CROSS JOIN generate_series(50,70, 20) AS j CROSS JOIN generate_series(1,2) As m ORDER BY i, j, i*j*m)) As foo1 LIMIT 1;
+SELECT '#680', encode(ST_AsBinary(geography(foo1.the_geom),'ndr'),'hex') As result FROM ((SELECT ST_SetSRID(ST_MakePointM(i,j,m),4326) As the_geom FROM generate_series(-10,50,10) As i CROSS JOIN generate_series(50,70, 20) AS j CROSS JOIN generate_series(1,2) As m ORDER BY i, j, i*j*m LIMIT 1)) As foo1;
 
 -- #681 --
 SELECT '#681a', ST_AsGML(ST_GeomFromText('POINT EMPTY', 4326));
@@ -389,7 +389,7 @@ INSERT INTO foo VALUES (2, st_geomfromtext('MULTIPOLYGON(((-113.7 35.3,-113.7 35
 
 select '#884', id, ST_Within(
 ST_GeomFromText('POINT (-113.4 35.6)'), the_geom
-) from foo;
+) from foo order by id;
 
 select '#938', 'POLYGON EMPTY'::geometry::box2d;
 
@@ -527,12 +527,12 @@ COPY cacheable FROM STDIN;
 \.
 select '#852.1', id, -- first run is not cached, consequent are cached
   st_intersects(g, 'POLYGON((0 0, 10 10, 1 0, 0 0))'::geometry),
-  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable;
+  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable order by id;
 UPDATE cacheable SET g = 'POINT(0.5 0.5)';
 -- New select, new cache
 select '#852.2', id, -- first run is not cached, consequent are cached
   st_intersects(g, 'POLYGON((0 0, 10 10, 1 0, 0 0))'::geometry),
-  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable;
+  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable order by id;
 DROP TABLE cacheable;
 
 -- #1489

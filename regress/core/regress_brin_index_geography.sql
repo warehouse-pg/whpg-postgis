@@ -1,6 +1,8 @@
 --- build a larger database
 \i :regdir/core/regress_lots_of_geographies.sql
 
+-- ORCA does not support index scans
+set optimizer = off;
 --- test some of the searching capabilities
 
 CREATE OR REPLACE FUNCTION qnodes(q text) RETURNS text
@@ -62,3 +64,5 @@ DROP FUNCTION qnodes(text);
 set enable_indexscan = on;
 set enable_bitmapscan = on;
 set enable_seqscan = on;
+
+reset optimizer;

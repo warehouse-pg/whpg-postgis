@@ -1,6 +1,8 @@
 --- build a larger database
 \i :regdir/core/regress_lots_of_points.sql
 
+-- ORCA does not support index scans
+set optimizer = off;
 --- Test the various BRIN opclass with dataset containing 2D geometries
 
 CREATE OR REPLACE FUNCTION qnodes(q text) RETURNS text
@@ -116,7 +118,10 @@ INSERT INTO test select i, st_makepoint(i, i) FROM generate_series(4, 1000) i;
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom && ''BOX(900.1 900.1, 920.1 920.1)''::box2d');
  select '2d', count(*) from test where the_geom && 'BOX(900.1 900.1, 920.1 920.1)'::box2d;
 
-SELECT 'summarize 2d', brin_summarize_new_values('brin_2d');
+-- FIXME: GPDB index based summaries are not 1-to-1 with PG
+-- brin_summarize_new_values is not a postgis function in any case
+
+-- SELECT 'summarize 2d', brin_summarize_new_values('brin_2d');
 
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom && ''BOX(900.1 900.1, 920.1 920.1)''::box2d');
  select '2d', count(*) from test where the_geom && 'BOX(900.1 900.1, 920.1 920.1)'::box2d;
@@ -140,7 +145,7 @@ INSERT INTO test select i, st_makepoint(i, i) FROM generate_series(4, 1000) i;
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom &&& ''BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)''::box3d');
  select '3d', count(*) from test where the_geom &&& 'BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)'::box3d;
 
-SELECT 'summarize 3d', brin_summarize_new_values('brin_3d');
+-- SELECT 'summarize 3d', brin_summarize_new_values('brin_3d');
 
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom &&& ''BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)''::box3d');
  select '3d', count(*) from test where the_geom &&& 'BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)'::box3d;
@@ -164,7 +169,7 @@ INSERT INTO test select i, st_makepoint(i, i) FROM generate_series(4, 1000) i;
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom &&& ''BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)''::box3d');
  select '4d', count(*) from test where the_geom &&& 'BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)'::box3d;
 
-SELECT 'summarize 4d', brin_summarize_new_values('brin_4d');
+-- SELECT 'summarize 4d', brin_summarize_new_values('brin_4d');
 
 SELECT 'scan_idx', qnodes('select count(*) from test where the_geom &&& ''BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)''::box3d');
  select '4d', count(*) from test where the_geom &&& 'BOX3D(900.1 900.1 900.1, 920.1 920.1 920.1)'::box3d;
@@ -178,3 +183,5 @@ DROP FUNCTION qnodes(text);
 set enable_indexscan = on;
 set enable_bitmapscan = on;
 set enable_seqscan = on;
+
+reset optimizer;

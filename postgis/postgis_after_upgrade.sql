@@ -231,6 +231,7 @@ DROP FUNCTION IF EXISTS pgis_geometry_union_transfn(internal, geometry);
 DROP FUNCTION IF EXISTS pgis_geometry_union_finalfn(internal);
 
 -- #4394
+set allow_system_table_mods=true;
 update pg_operator set oprcanhash = true, oprcanmerge = true where oprname = '=' and oprcode = 'geometry_eq'::regproc;
 
 
@@ -248,3 +249,4 @@ IF _postgis_scripts_pgsql_version()::integer >= 96 THEN
 END IF;
 END;
 $$;
+reset allow_system_table_mods;

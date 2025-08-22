@@ -8,6 +8,7 @@
 # Copyright (C) 2011 OpenGeo.org
 # Copyright (C) 2009-2010 Paul Ramsey <pramsey@opengeo.org>
 # Copyright (C) 2001-2005 Refractions Research Inc.
+# Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 #
 # This is free software; you can redistribute and/or modify it under
 # the terms of the GNU General Public Licence. See the COPYING file.
@@ -157,7 +158,7 @@ while( my $line = <INPUT>)
 		}
 		push (@ops, $defn)
 	}
-	elsif ($line =~ /^create aggregate/i) {
+	elsif ($line =~ /^create (ordered )?aggregate/i) {
 		my $defn = $line;
 		while( not $defn =~ /;\s*$/ ) {
 			$defn .= <INPUT>;
@@ -194,11 +195,11 @@ foreach my $view (@views)
 print "-- Drop all aggregates.\n";
 foreach my $agg (@aggs)
 {
-	if ( $agg =~ /create aggregate\s*([\w\.]+)\s*\(\s*.*basetype = ([\w\.]+)/ism )
+	if ( $agg =~ /.* aggregate\s*([\w\.]+)\s*\(\s*.*basetype = ([\w\.]+)/ism )
 	{
 		print "DROP AGGREGATE IF EXISTS $1 ($2);\n";
 	}
-	elsif ( $agg =~ /create aggregate\s*([\w\.]+)\s*\(\s*([\w,\.\s\[\]]+)\s*\)/ism )
+	elsif ( $agg =~ /.* aggregate\s*([\w\.]+)\s*\(\s*([\w,\.\s\[\]]+)\s*\)/ism )
 	{
 		print "DROP AGGREGATE IF EXISTS $1 ($2);\n";
 	}

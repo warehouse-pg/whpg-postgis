@@ -16,6 +16,7 @@ SELECT '#2532.2', NULL::geometry @ null::raster;
  #2911
 ******************************************************************************/
 -- added OFFSET 0 to force PostgreSQL 12+ to materialize the cte
+SET client_min_messages TO WARNING;
 WITH data AS ( SELECT '#2911' l, ST_Metadata(ST_Rescale(
  ST_AddBand(
   ST_MakeEmptyRaster(10, 10, 0, 0, 1, -1, 0, 0, 0),
@@ -25,6 +26,7 @@ WITH data AS ( SELECT '#2911' l, ST_Metadata(ST_Rescale(
  -2.0
  )) m OFFSET 0
 ) SELECT l, (m).* FROM data;
+RESET client_min_messages;
 
 /******************************************************************************
  #3006

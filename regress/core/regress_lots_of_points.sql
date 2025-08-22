@@ -3,7 +3,7 @@
 CREATE TABLE "test" (
 	"num" bigint,
 	"the_geom" geometry
-);
+) DISTRIBUTED BY(num);
 
 INSERT INTO "test" ("num", "the_geom")
   SELECT path[1], ST_AsText(geom, 6)

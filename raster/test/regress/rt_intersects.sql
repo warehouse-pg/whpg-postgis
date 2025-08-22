@@ -163,7 +163,8 @@ SELECT
 FROM raster_intersects_rast r1
 JOIN raster_intersects_rast r2
 	ON r1.rid != r2.rid
-WHERE r1.rid = 0;
+WHERE r1.rid = 0
+ORDER BY 2, 3;
 
 SELECT
 	'1.2',
@@ -173,7 +174,8 @@ SELECT
 FROM raster_intersects_rast r1
 JOIN raster_intersects_rast r2
 	ON r1.rid != r2.rid
-WHERE r1.rid = 0;
+WHERE r1.rid = 0
+ORDER BY 2, 3;
 
 -- point
 INSERT INTO raster_intersects_geom VALUES (
@@ -379,7 +381,8 @@ SELECT
 	ST_Intersects(r1.rast, g1.geom)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 0;
+WHERE r1.rid = 0
+ORDER BY 2, 3;
 
 SELECT
 	'2.2',
@@ -389,7 +392,8 @@ SELECT
 	ST_Intersects(g1.geom, r1.rast)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 0;
+WHERE r1.rid = 0
+ORDER BY 2, 3;
 
 SELECT
 	'2.3',
@@ -399,7 +403,8 @@ SELECT
 	ST_Intersects(r1.rast, g1.geom)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 2;
+WHERE r1.rid = 2
+ORDER BY 2, 3;
 
 SELECT
 	'2.4',
@@ -409,7 +414,8 @@ SELECT
 	ST_Intersects(g1.geom, r1.rast)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 2;
+WHERE r1.rid = 2
+ORDER BY 2, 3;
 
 SELECT
 	'2.5',
@@ -419,7 +425,8 @@ SELECT
 	ST_Intersects(r1.rast, g1.geom, 1)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 0;
+WHERE r1.rid = 0
+ORDER BY 2, 3;
 
 SELECT
 	'2.6',
@@ -429,7 +436,8 @@ SELECT
 	ST_Intersects(r1.rast, g1.geom, 1)
 FROM raster_intersects_rast r1
 CROSS JOIN raster_intersects_geom g1
-WHERE r1.rid = 2;
+WHERE r1.rid = 2
+ORDER BY 2, 3;
 
 DROP TABLE IF EXISTS raster_intersects_rast;
 DROP TABLE IF EXISTS raster_intersects_geom;

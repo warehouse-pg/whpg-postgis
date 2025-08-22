@@ -87,8 +87,10 @@ CREATE OR REPLACE FUNCTION raster_polynomial(pixel FLOAT, VARIADIC args TEXT[])
     LANGUAGE 'plpgsql' IMMUTABLE;
 
 -- Test NULL raster
+SET client_min_messages TO ERROR;
 SELECT ST_MapAlgebraFct(NULL, 1, NULL, 'raster_plus_twenty(float, text[])'::regprocedure) IS NULL FROM ST_TestRaster(0, 0, -1) rast;
 SELECT ST_MapAlgebraFct(NULL, 1, NULL, 'raster_plus_twenty(float, text[])'::regprocedure, NULL) IS NULL FROM ST_TestRaster(0, 0, -1) rast;
+RESET client_min_messages;
 
 -- Test empty raster
 SELECT ST_IsEmpty(ST_MapAlgebraFct(ST_MakeEmptyRaster(0, 10, 0, 0, 1, 1, 1, 1, 0), 1, NULL, 'raster_plus_twenty(float, text[])'::regprocedure));

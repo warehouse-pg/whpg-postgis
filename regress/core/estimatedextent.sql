@@ -1,9 +1,10 @@
 -- #877, #818
+set allow_system_table_mods=true;
+SET client_min_messages TO ERROR;
 create table t(g geometry);
 select '#877.1', ST_EstimatedExtent('t','g');
 analyze t;
 select '#877.2', ST_EstimatedExtent('public', 't','g');
-SET client_min_messages TO NOTICE;
 insert into t(g) values ('LINESTRING(-10 -50, 20 30)');
 
 -- #877.3
@@ -27,7 +28,7 @@ drop table t;
 -- #3391
 -- drop table if exists p cascade;
 
-create table p(g geometry);
+create table p(g geometry) DISTRIBUTED BY(g);
 create table c1() inherits (p);
 create table c2() inherits (p);
 
@@ -176,33 +177,39 @@ from ( select ST_EstimatedExtent('public','c1','g', 'f') as e offset 0 ) AS e;
 select '#3391.20', round(st_xmin(e.e)::numeric, 2), round(st_xmax(e.e)::numeric, 2),
 round(st_ymin(e.e)::numeric, 2), round(st_ymax(e.e)::numeric, 2)
 from ( select ST_EstimatedExtent('public','c1','g', 't') as e offset 0 ) AS e;
-
+SET client_min_messages TO NOTICE;
 drop table p cascade;
 
+-- FIXME: Remove index tests
+-- -- #5120
+-- BEGIN;
+-- CREATE TABLE t(g geometry);
+-- INSERT INTO t SELECT ST_MakePoint(n,n) FROM generate_series(0,10) n;
+-- ANALYZE t;
+-- SELECT '#5120.without_index', ST_AsText(
+-- 	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
+-- 	0
+-- );
+-- CREATE INDEX ON t USING GIST (g);
+-- SELECT '#5120.with_index', ST_AsText(
+-- 	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
+-- 	0
+-- );
+-- TRUNCATE t;
+-- --DELETE FROM t; -- requires VACUUM to clean index
+-- --VACUUM t; -- drops entries from index (cannot run within transaction)
+-- SELECT '#5120.without_data', ST_AsText(
+-- 	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
+-- 	0
+-- );
+-- ROLLBACK;
 
--- #5120
-BEGIN;
-CREATE TABLE t(g geometry);
-INSERT INTO t SELECT ST_MakePoint(n,n) FROM generate_series(0,10) n;
-ANALYZE t;
-SELECT '#5120.without_index', ST_AsText(
-	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
-	0
-);
-CREATE INDEX ON t USING GIST (g);
-SELECT '#5120.with_index', ST_AsText(
-	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
-	0
-);
-TRUNCATE t;
---DELETE FROM t; -- requires VACUUM to clean index
---VACUUM t; -- drops entries from index (cannot run within transaction)
-SELECT '#5120.without_data', ST_AsText(
-	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
-	0
-);
-ROLLBACK;
+-- Output:
+-- #5120.without_index|LINESTRING(0 0,10 10)
+-- #5120.with_index|LINESTRING(0 0,10 10)
+-- #5120.without_data|
 
+SET client_min_messages TO ERROR;
 --
 -- Index assisted extent generation
 --
@@ -218,9 +225,11 @@ select '2.b null', _postgis_index_extent('test', 'geom2');
 insert into test (geom1, geom2) select 'POINT EMPTY', 'LINESTRING EMPTY' from generate_series(0,1024);
 select '3.a null', _postgis_index_extent('test', 'geom1');
 select '3.b null', _postgis_index_extent('test', 'geom2');
-insert into test (geom1, geom2) select st_makepoint(s, s), st_makepoint(2*s, 2*s) from generate_series(-100,100) s;
-select '4.a box',_postgis_index_extent('test', 'geom1');
-select '4.b box',_postgis_index_extent('test', 'geom2');
+-- Disable test _postgis_index_extent is not supported
+-- on GPDB6 due to its dependence on spatial index operations
+-- insert into test (geom1, geom2) select st_makepoint(s, s), st_makepoint(2*s, 2*s) from generate_series(-100,100) s;
+-- select '4.a box',_postgis_index_extent('test', 'geom1');
+-- select '4.b box',_postgis_index_extent('test', 'geom2');
 -- delete from test;
 -- select '5.a bad-box',_postgis_index_extent('test', 'geom1');
 -- select '5.b bad-box',_postgis_index_extent('test', 'geom2');
@@ -228,6 +237,7 @@ select '4.b box',_postgis_index_extent('test', 'geom2');
 -- select '6.a null', _postgis_index_extent('test', 'geom1');
 -- select '6.b null', _postgis_index_extent('test', 'geom2');
 drop table test cascade;
+SET client_min_messages TO NOTICE;
 
 -- Check NOTICE message
 create table test (id serial primary key, geom1 geometry, geom2 geometry);

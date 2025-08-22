@@ -4,6 +4,7 @@
  * http://postgis.net
  *
  * Copyright (C) 2001-2003 Refractions Research Inc.
+ * Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
  *
  * This is free software; you can redistribute and/or modify it under
  * the terms of the GNU General Public Licence. See the COPYING file.
@@ -2191,8 +2192,27 @@ ShpDumperDestroy(SHPDUMPERSTATE *state)
 	/* Destroy a state object created with ShpDumperConnect */
 	int i;
 
+	PGresult *res;
+	stringbuffer_t sb;
 	if (state != NULL)
 	{
+		if (state->config->usrquery)
+		{
+			stringbuffer_init(&sb);
+			stringbuffer_aprintf(&sb,
+				"DROP TABLE IF EXISTS \"%s\" ",
+				state->table);
+			res = PQexec(state->conn, stringbuffer_getstring(&sb));
+			stringbuffer_release(&sb);
+
+			/* Execute the code to create the table */
+			if (PQresultStatus(res) != PGRES_COMMAND_OK)
+			{
+				snprintf(state->message, SHPDUMPERMSGLEN, _("Error executing user query: %s"), PQresultErrorMessage(res));
+				PQclear(res);
+				return;
+			}
+		}
 		/* Disconnect from the database */
 		if (state->conn)
 			PQfinish(state->conn);

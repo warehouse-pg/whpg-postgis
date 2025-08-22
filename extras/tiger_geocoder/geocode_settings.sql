@@ -3,6 +3,7 @@
 -- http://postgis.net
 --
 -- Copyright (C) 2010, 2011-2015 Regina Obe and Leo Hsu
+-- Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 --
 -- This is free software; you can redistribute and/or modify it under
 -- the terms of the GNU General Public Licence. See the COPYING file.
@@ -20,11 +21,11 @@ DECLARE var_temp text;
 BEGIN
 	var_temp := tiger.SetSearchPathForInstall('tiger'); /** set set search path to have tiger in front **/
 	IF NOT EXISTS(SELECT table_name FROM information_schema.columns WHERE table_schema = 'tiger' AND table_name = 'geocode_settings')  THEN
-		CREATE TABLE geocode_settings(name text primary key, setting text, unit text, category text, short_desc text);
+		CREATE TABLE geocode_settings(name text primary key, setting text, unit text, category text, short_desc text) DISTRIBUTED REPLICATED;
 		GRANT SELECT ON geocode_settings TO public;
 	END IF;
 	IF NOT EXISTS(SELECT table_name FROM information_schema.columns WHERE table_schema = 'tiger' AND table_name = 'geocode_settings_default')  THEN
-		CREATE TABLE geocode_settings_default(name text primary key, setting text, unit text, category text, short_desc text);
+		CREATE TABLE geocode_settings_default(name text primary key, setting text, unit text, category text, short_desc text) DISTRIBUTED REPLICATED;
 		GRANT SELECT ON geocode_settings_default TO public;
 	END IF;
 	--recreate defaults

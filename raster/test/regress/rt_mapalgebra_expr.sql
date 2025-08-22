@@ -432,7 +432,7 @@ FROM (
 	FROM raster_mapalgebra_out
 		LEFT JOIN LATERAL ST_Metadata(rast) AS md ON true
 		LEFT JOIN LATERAL ST_BandMetadata(rast, 1) AS bmd ON true
-) AS r;
+) AS r ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
 
 DROP TABLE IF EXISTS raster_mapalgebra;
 DROP TABLE IF EXISTS raster_mapalgebra_out;

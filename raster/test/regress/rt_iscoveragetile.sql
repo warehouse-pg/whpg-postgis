@@ -1,3 +1,4 @@
+SET client_min_messages TO WARNING;
 DROP TABLE IF EXISTS raster_iscoveragetile;
 CREATE TABLE raster_iscoveragetile AS
 	WITH foo AS (
@@ -198,3 +199,5 @@ FROM foo
 CROSS JOIN raster_iscoveragetile ict;
 
 DROP TABLE IF EXISTS raster_iscoveragetile;
+
+RESET client_min_messages;

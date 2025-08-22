@@ -1,7 +1,7 @@
 
 SELECT EnableLongTransactions();
 
-CREATE TABLE test_locks (id numeric, state varchar);
+CREATE TABLE test_locks (id numeric, state varchar) DISTRIBUTED BY (id);
 INSERT INTO test_locks(id) VALUES (1);
 INSERT INTO test_locks(id) VALUES (2);
 INSERT INTO test_locks(id) VALUES (3);

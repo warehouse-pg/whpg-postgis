@@ -7,5 +7,5 @@ t6|t
 t7|t
 t8|t
 t9|f
-ERROR:  Median failed to converge within 2e-6 after 1 iterations.
+ERROR:  Median failed to converge within 2e-6 after 1 iterations. (lwgeom_pg.c:128)
 t11|f

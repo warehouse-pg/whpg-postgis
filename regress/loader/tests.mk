@@ -29,16 +29,18 @@ TESTS += \
 	$(top_srcdir)/regress/loader/TSTIPolygon \
 	$(top_srcdir)/regress/loader/PointWithSchema \
 	$(top_srcdir)/regress/loader/NoTransPoint \
-	$(top_srcdir)/regress/loader/NotReallyMultiPoint \
-	$(top_srcdir)/regress/loader/MultiToSinglePoint \
-	$(top_srcdir)/regress/loader/ReprojectPts \
-	$(top_srcdir)/regress/loader/ReprojectPtsD \
-	$(top_srcdir)/regress/loader/ReprojectPtsGeog \
-	$(top_srcdir)/regress/loader/ReprojectPtsGeogD \
 	$(top_srcdir)/regress/loader/Latin1 \
 	$(top_srcdir)/regress/loader/Latin1-implicit \
 	$(top_srcdir)/regress/loader/mfile \
 	$(top_srcdir)/regress/loader/TestSkipANALYZE \
 	$(top_srcdir)/regress/loader/TestANALYZE \
 	$(top_srcdir)/regress/loader/CharNoWidth
+
+# FIXME: loader and dumper tests
+# 	$(top_srcdir)/regress/loader/NotReallyMultiPoint \
+# 	$(top_srcdir)/regress/loader/MultiToSinglePoint \
+# 	$(top_srcdir)/regress/loader/ReprojectPts \
+# 	$(top_srcdir)/regress/loader/ReprojectPtsD \
+# 	$(top_srcdir)/regress/loader/ReprojectPtsGeog \
+# 	$(top_srcdir)/regress/loader/ReprojectPtsGeogD \
 

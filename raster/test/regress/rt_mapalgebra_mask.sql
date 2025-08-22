@@ -34,8 +34,6 @@ CREATE OR REPLACE FUNCTION raster_nmapalgebra_test(
 	END;
 	$$ LANGUAGE 'plpgsql' IMMUTABLE;
 
-SET client_min_messages TO notice;
-
 select st_mapalgebra(rast,1,'raster_nmapalgebra_test(double precision[], int[], text[])'::regprocedure,ARRAY[[1,1],[1,1],[1,1]]::double precision[],false) from raster_nmapalgebra_mask_in;
 
 select st_mapalgebra(rast,1,'raster_nmapalgebra_test(double precision[], int[], text[])'::regprocedure,ARRAY[[1,1,1],[1,1,1]]::double precision[],false) from raster_nmapalgebra_mask_in;
@@ -122,3 +120,5 @@ ORDER BY rid, (dv).nband;
 
 DROP FUNCTION IF EXISTS raster_nmapalgebra_test(double precision[], int[], text[]);
 DROP TABLE IF EXISTS raster_nmapalgebra_mask_in;
+
+RESET client_min_messages;
