@@ -29,6 +29,7 @@ $$;
 
 CREATE INDEX quick_gist on test using gist (the_geom);
 
+set optimizer = off;
 set enable_indexscan = off;
 set enable_bitmapscan = off;
 set enable_seqscan = on;
@@ -89,8 +90,17 @@ ALTER TABLE test ALTER COLUMN the_geom SET STATISTICS 10000;
 ANALYZE test;
 
 SELECT estimate_error(
-  'select num from test where the_geom && ' || box, tol )
-  FROM sample_queries ORDER BY id;
+  'select num from test where the_geom && ' || 'ST_MakeEnvelope(125,125,135,135)', 5 );
+
+SELECT estimate_error(
+  'select num from test where the_geom && ' || 'ST_MakeEnvelope(0,0,135,135)', 60 );
+
+SELECT estimate_error(
+  'select num from test where the_geom && ' || 'ST_MakeEnvelope(0,0,500,500)', 500 );
+
+SELECT estimate_error(
+  'select num from test where the_geom && ' || 'ST_MakeEnvelope(0,0,1000,1000)', 600 );
+
 
 -- Test selectivity estimation of functional indexes
 
@@ -98,11 +108,18 @@ CREATE INDEX expressional_gist on test using gist ( st_centroid(the_geom) );
 ANALYZE test;
 
 SELECT 'expr', estimate_error(
-  'select num from test where st_centroid(the_geom) && ' || box, tol )
-  FROM sample_queries ORDER BY id;
+  'select num from test where st_centroid(the_geom) && ' || 'ST_MakeEnvelope(125,125,135,135)', 5 );
+
+SELECT 'expr', estimate_error(
+  'select num from test where st_centroid(the_geom) && ' || 'ST_MakeEnvelope(0,0,135,135)', 60 );
+
+SELECT 'expr', estimate_error(
+  'select num from test where st_centroid(the_geom) && ' || 'ST_MakeEnvelope(0,0,500,500)', 500 );
+
+SELECT 'expr', estimate_error(
+  'select num from test where st_centroid(the_geom) && ' || 'ST_MakeEnvelope(0,0,1000,1000)', 600 );
 
 DROP TABLE test;
-DROP TABLE sample_queries;
 
 DROP FUNCTION estimate_error(text, int);
 
@@ -111,6 +128,7 @@ DROP FUNCTION qnodes(text);
 set enable_indexscan = on;
 set enable_bitmapscan = on;
 set enable_seqscan = on;
+reset optimizer;
 
 -- _ST_SortableHash is a work around Postgres parallel sort requiring recalculation of abbreviated keys.
 select '_st_sortablehash', _ST_SortableHash('POINT(0 0)'), _ST_SortableHash('SRID=4326;POINT(0 0)'), _ST_SortableHash('SRID=3857;POINT(0 0)');

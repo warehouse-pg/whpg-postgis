@@ -79,8 +79,8 @@ select 'ab3',ST_MakeEnvelope(2,5,4,8) |>> ST_MakeEnvelope(2,2,4,4); --t
 
 -- same as           =
 
-select 'eq1',ST_MakeEnvelope(2,2,4,4) = ST_MakeEnvelope(2,2,4,4); -- f
-select 'eq2',ST_MakeEnvelope(2,4,4,8) = 'LINESTRING(2 4,4 8)'::geometry; -- t
+select 'eq1',ST_MakeEnvelope(2,2,4,4) = ST_MakeEnvelope(2,2,4,4); -- t
+select 'eq2',ST_MakeEnvelope(2,4,4,8) = 'LINESTRING(2 4,4 8)'::geometry; -- f
 select 'eq3',ST_MakePoint(0,0) = ST_MakePoint(1,0); -- f
 
 -- box centroid distance  <->
@@ -232,7 +232,7 @@ group by v1.i
 ORDER BY 2;
 
 -- GROUP BY on empty
-SELECT '#3777', ST_AsText(geom), count(*)
+CREATE TABLE t1 AS SELECT ST_AsText(geom) as geom
 FROM (VALUES
     ('POINT(0 0)'::geometry),
     ('POINT(0 0)'::geometry),
@@ -241,10 +241,13 @@ FROM (VALUES
     ('LINESTRING(0 0,0 1)'::geometry),
     ('GEOMETRYCOLLECTION EMPTY'::geometry),
     ('POINT EMPTY'::geometry)
-) AS f(geom)
+) AS f(geom) DISTRIBUTED BY (geom);
+
+SELECT '#3777', ST_AsText(geom), count(*)
+FROM t1
 GROUP BY geom ORDER BY 2;
 
-SELECT '#3777.1', ST_AsText(geom), count(*)
+CREATE TABLE t2 AS SELECT ST_AsText(geom) as geom
 FROM (VALUES
     ('POINT(0 0)'::geometry),
     ('POINT(0 0)'::geometry),
@@ -253,5 +256,8 @@ FROM (VALUES
     ('POINT(0 1)'::geometry),
     ('LINESTRING(0 0,0 1)'::geometry),
     ('GEOMETRYCOLLECTION EMPTY'::geometry)
-) AS f(geom)
+) AS f(geom) DISTRIBUTED BY (geom);
+
+SELECT '#3777.1', ST_AsText(geom), count(*)
+FROM t2
 GROUP BY geom ORDER BY 2;

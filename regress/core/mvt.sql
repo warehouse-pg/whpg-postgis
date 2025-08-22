@@ -18,10 +18,10 @@ select 'PG3', ST_AsText(ST_AsMVTGeom(
 	ST_Point(1, 2),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(4096/2, 4096/2)),
 	4096, 0, false));
-select 'PG4', ST_AsText(ST_AsMVTGeom(
-	ST_GeomFromText('POLYGON ((0 0, 10 0, 10 5, 0 -5, 0 0))'),
+select 'PG4', ST_AsText(ST_Normalize(ST_AsMVTGeom(
+    ST_GeomFromText('POLYGON ((0 0, 10 0, 10 5, 0 -5, 0 0))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(4096, 4096)),
-	4096, 0, false));
+    4096, 0, false)));
 select 'PG5', ST_AsText(ST_AsMVTGeom(
 	ST_GeomFromText('POLYGON ((0 0, 10 0, 10 5, 0 -5, 0 0))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(4096*4096, 4096*4096)),
@@ -41,10 +41,10 @@ SELECT 'PG7', ST_Area(COALESCE(ST_AsMVTGeom(
 	ST_MakeBox2D(ST_Point(-20037508.34, -20037508.34), ST_Point(20037508.34, 20037508.34)),
 	4096, 10, true), 'POLYGON EMPTY'::geometry)) <= 2;
 
-select 'PG8', ST_AsText(ST_AsMVTGeom(
-	ST_GeomFromText('GEOMETRYCOLLECTION(MULTIPOLYGON (((0 0, 10 0, 10 5, 0 -5, 0 0))))'),
+select 'PG8', ST_AsText(ST_Normalize(ST_AsMVTGeom(
+    ST_GeomFromText('GEOMETRYCOLLECTION(MULTIPOLYGON (((0 0, 10 0, 10 5, 0 -5, 0 0))))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(4096, 4096)),
-	4096, 0, false));
+    4096, 0, false)));
 select 'PG9', ST_Area(ST_AsMVTGeom(
 	ST_GeomFromText('POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(5, 5)),
@@ -274,10 +274,10 @@ SELECT 'PG43 - ON ', ST_AsText(ST_Normalize(ST_AsMVTGeom(
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(100, 100)),
 	10, 0, true)));
 
-SELECT 'PG43 - OFF', ST_AsText(ST_AsMVTGeom(
-	ST_GeomFromText('POLYGON((-10 -10, 110 110, -10 110, 110 -10, -10 -10))'),
+SELECT 'PG43 - OFF', ST_AsText(ST_Normalize(ST_AsMVTGeom(
+    ST_GeomFromText('POLYGON((-10 -10, 110 110, -10 110, 110 -10, -10 -10))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(100, 100)),
-	10, 0, false));
+    10, 0, false)));
 
 -- Geometry type change
 SELECT 'PG44', ST_AsEWKT(ST_AsMVTGeom(
@@ -406,7 +406,7 @@ WITH geometry AS
     SELECT ST_AsText(ST_AsMVTGeom(
 	ST_GeomFromText('GEOMETRYCOLLECTION(LINESTRING(10 10, 20 20), POLYGON((110 90, 110 110, 90 110, 90 90, 110 90)), LINESTRING(20 20, 15 15))'),
 	ST_MakeBox2D(ST_Point(0, 0), ST_Point(100, 100)),
-	100, 0, true)) as g
+    100, 0, true))) as g
 )
 SELECT 'PG63',
         ST_Area(g),

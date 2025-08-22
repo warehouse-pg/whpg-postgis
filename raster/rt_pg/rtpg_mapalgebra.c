@@ -2113,8 +2113,8 @@ static int rtpg_union_noarg(rtpg_union_arg arg, rt_raster raster) {
 PG_FUNCTION_INFO_V1(RASTER_union_transfn);
 Datum RASTER_union_transfn(PG_FUNCTION_ARGS)
 {
-	MemoryContext aggcontext;
-	MemoryContext oldcontext;
+	MemoryContext aggcontext = NULL;
+	MemoryContext oldcontext = NULL;
 	rtpg_union_arg iwr = NULL;
 	int skiparg = 0;
 
@@ -2798,7 +2798,7 @@ Datum RASTER_union_transfn(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(RASTER_union_finalfn);
 Datum RASTER_union_finalfn(PG_FUNCTION_ARGS)
 {
-	rtpg_union_arg iwr;
+	rtpg_union_arg iwr = NULL;
 	rt_raster _rtn = NULL;
 	rt_raster _raster = NULL;
 	rt_pgraster *pgraster = NULL;
@@ -6007,7 +6007,7 @@ Datum RASTER_mapAlgebraFctNgb(PG_FUNCTION_ARGS)
 
     /* pass the nodata mode into the user function */
 #if POSTGIS_PGSQL_VERSION < 120
-    cbdata.arg[1] = CStringGetDatum(txtCallbackParam);
+    cbdata.arg[1] = CStringGetDatum((char*)txtCallbackParam);
 #else
     cbdata->args[1].value = CStringGetDatum(txtCallbackParam);
 #endif

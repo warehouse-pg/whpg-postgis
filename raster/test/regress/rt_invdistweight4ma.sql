@@ -38,6 +38,7 @@ CREATE OR REPLACE FUNCTION make_value_array(
 				END IF;
 
 				value := value + step;
+				EXECUTE 'SELECT ROUND(' || value || ', 2)' INTO value;
 			END LOOP;
 		END LOOP;
 

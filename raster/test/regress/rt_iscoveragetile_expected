@@ -1,4 +1,3 @@
-NOTICE:  table "raster_iscoveragetile" does not exist, skipping
 1|t
 1|t
 1|t
@@ -351,14 +350,6 @@ NOTICE:  table "raster_iscoveragetile" does not exist, skipping
 19|t
 19|t
 19|t
-NOTICE:  Raster width/height is invalid for interior tile of coverage
-NOTICE:  Raster width/height is invalid for interior tile of coverage
-NOTICE:  Raster width/height is invalid for right-most tile of coverage
-NOTICE:  Raster width/height is invalid for interior tile of coverage
-NOTICE:  Raster width/height is invalid for interior tile of coverage
-NOTICE:  Raster width/height is invalid for right-most tile of coverage
-NOTICE:  Raster width/height is invalid for bottom-most tile of coverage
-NOTICE:  Raster width/height is invalid for bottom-most tile of coverage
 20|f
 20|f
 20|f

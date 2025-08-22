@@ -1,4 +1,4 @@
-SET client_min_messages = NOTICE;
+SET client_min_messages = ERROR;
 DROP TABLE IF EXISTS raster_grayscale_out;
 CREATE TABLE raster_grayscale_out (
 	testid integer,
@@ -164,3 +164,5 @@ ROLLBACK;
 
 DROP TABLE IF EXISTS raster_grayscale_in;
 DROP TABLE IF EXISTS raster_grayscale_out;
+
+RESET client_min_messages;

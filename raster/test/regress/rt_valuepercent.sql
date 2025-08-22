@@ -1,3 +1,4 @@
+SET optimizer TO OFF;
 SELECT round(value::numeric, 3), round(percent::numeric, 3) FROM ST_ValuePercent(
 	ST_SetValue(
 		ST_SetValue(
@@ -244,3 +245,5 @@ SELECT round(ST_ValuePercent('test', 'rast', 1, -1)::numeric, 3);
 SELECT round(ST_ValuePercent('test', 'rast', 3.1, 0.1)::numeric, 3);
 SELECT round(ST_ValuePercent('test', 'rast', -9.)::numeric, 3);
 ROLLBACK;
+
+RESET optimizer;

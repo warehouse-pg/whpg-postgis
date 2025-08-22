@@ -10,6 +10,7 @@
  * Copyright (C) 2009-2011 Pierre Racine <pierre.racine@sbf.ulaval.ca>
  * Copyright (C) 2009-2011 Mateusz Loskot <mateusz@loskot.net>
  * Copyright (C) 2008-2009 Sandro Santilli <strk@kbt.io>
+ * Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,6 +33,7 @@
 #include <executor/spi.h>
 
 #include "rtpg_internal.h"
+#include "libsrid.h"
 
 /* string replacement function taken from
  * http://ubuntuforums.org/showthread.php?s=aa6f015109fd7e4c7e30d2fd8b717497&t=141670&page=3
@@ -290,6 +292,7 @@ rtpg_getSR(int32_t srid)
 	HeapTuple tuple;
 	char *tmp = NULL;
 	char *srs = NULL;
+    char query[256];
 
 /*
 SELECT
@@ -307,17 +310,33 @@ WHERE srid = X
 LIMIT 1
 */
 
-	len = sizeof(char) * (strlen("SELECT CASE WHEN (upper(auth_name) = 'EPSG' OR upper(auth_name) = 'EPSGA') AND length(COALESCE(auth_srid::text, '')) > 0 THEN upper(auth_name) || ':' || auth_srid WHEN length(COALESCE(auth_name, '') || COALESCE(auth_srid::text, '')) > 0 THEN COALESCE(auth_name, '') || COALESCE(auth_srid::text, '') ELSE '' END, proj4text, srtext FROM spatial_ref_sys WHERE srid =  LIMIT 1") + MAX_INT_CHARLEN + 1);
-	sql = (char *) palloc(len);
-	if (NULL == sql) {
-		elog(ERROR, "rtpg_getSR: Could not allocate memory for sql\n");
-		return NULL;
-	}
-
 	spi_result = SPI_connect();
 	if (spi_result != SPI_OK_CONNECT) {
 		pfree(sql);
 		elog(ERROR, "rtpg_getSR: Could not connect to database using SPI\n");
+        return NULL;
+    }
+
+    /* Greenplum tends to use in-memory hash instead of SPI query */
+    if (getSRSbySRIDbyRule(srid, true, query) != NULL) {
+        len = strlen(query) + 1;
+        srs = SPI_palloc(len);
+
+        if (NULL == srs) {
+            SPI_finish();
+            elog(ERROR, "rtpg_getSR: Could not allocate memory for spatial reference text\n");
+            return NULL;
+        }
+
+        SPI_finish();
+        memcpy(srs, query, len);
+        return srs;
+    }
+
+    len = sizeof(char) * (strlen("SELECT CASE WHEN (upper(auth_name) = 'EPSG' OR upper(auth_name) = 'EPSGA') AND length(COALESCE(auth_srid::text, '')) > 0 THEN upper(auth_name) || ':' || auth_srid WHEN length(COALESCE(auth_name, '') || COALESCE(auth_srid::text, '')) > 0 THEN COALESCE(auth_name, '') || COALESCE(auth_srid::text, '') ELSE '' END, proj4text, srtext FROM spatial_ref_sys WHERE srid =  LIMIT 1") + MAX_INT_CHARLEN + 1);
+    sql = (char *) palloc(len);
+    if (NULL == sql) {
+        elog(ERROR, "rtpg_getSR: Could not allocate memory for sql\n");
 		return NULL;
 	}
 

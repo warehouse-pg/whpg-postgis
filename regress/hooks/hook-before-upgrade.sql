@@ -1,3 +1,5 @@
+set allow_system_table_mods=true;
+
 CREATE TABLE upgrade_test(g1 geometry, g2 geography);
 INSERT INTO upgrade_test(g1,g2) VALUES
 ('POINT(0 0)', 'LINESTRING(0 0, 1 1)'),
@@ -86,3 +88,5 @@ FROM upgrade_test;
 -- the upgrade procedure to replace them all
 UPDATE pg_proc SET probin = probin || '-uninstalled'
 WHERE probin like '%postgis%';
+
+reset allow_system_table_mods;

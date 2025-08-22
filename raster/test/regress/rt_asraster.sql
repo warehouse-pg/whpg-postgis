@@ -497,7 +497,8 @@ FROM (
 		LEFT JOIN LATERAL ST_BandMetaData(d.rast) AS bmd ON true
 	CROSS JOIN raster_asraster_rast r
 	ORDER BY d.rid
-) foo;
+) foo
+ORDER BY rid;
 
 SELECT '#5084' As ticket, count(dp.geom)
 FROM ST_DumpAsPolygons(ST_AsRaster('LINESTRING(986015.7 6720291.2,986024.3 6720347,986028 6720417.4,986025.6 6720474.3)'::geometry, 2::double precision, 2, 0, 0)) AS dp;

@@ -1,5 +1,6 @@
 --
 -- Copyright (c) 2009 Mateusz Loskot <mateusz@loskot.net>
+-- Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 --
 -- This program is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU General Public License
@@ -41,7 +42,7 @@ INSERT INTO car5 (rid,rast) VALUES (2, ('01000003009A9999999999A93F9A9999999999A
 INSERT INTO car5 (rid,rast) VALUES (3, ('01000003009A9999999999A93F9A9999999999A9BF000000E02B274A4100000000771956410000000000000000000000000000000000000000050005000400FDFEFDFEFEFDFEFEFDF9FAFEFEFCF9FBFDFEFEFDFCFAFEFEFE04004E627AADD16076B4F9FE6370A9F5FE59637AB0E54F58617087040046566487A1506CA2E3FA5A6CAFFBFE4D566DA4CB3E454C5665')::raster );
 
 -- Run test
-SELECT rid, st_width(rast), st_height(rast), st_bandpixeltype(rast,1), st_bandpixeltype(rast,2), st_bandpixeltype(rast,3) FROM car5;
+SELECT rid, st_width(rast), st_height(rast), st_bandpixeltype(rast,1), st_bandpixeltype(rast,2), st_bandpixeltype(rast,3) FROM car5 ORDER BY rid;
 
 DROP TABLE car5;
 

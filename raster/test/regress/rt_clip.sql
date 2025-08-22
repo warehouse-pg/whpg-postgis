@@ -121,7 +121,8 @@ FROM (
 	FROM raster_clip_out
 		LEFT JOIN LATERAL ST_Metadata(rast) AS md ON true
 		LEFT JOIN LATERAL ST_BandMetadata(rast, 1) AS bmd ON true
-) AS r;
+) AS r
+ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
 
 -- Display the pixels and the values of the resulting rasters (raster 1)
 SELECT

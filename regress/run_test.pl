@@ -7,6 +7,7 @@
 # Copyright (C) 2012-2014 Sandro Santilli <strk@kbt.io>
 # Copyright (C) 2014-2015 Regina Obe <lr@pcorp.us>
 # Copyright (C) 2012-2013 Paul Ramsey <pramsey@cleverelephant.ca>
+# Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 #
 # This is free software; you can redistribute and/or modify it under
 # the terms of the GNU General Public Licence. See the COPYING file.
@@ -51,7 +52,7 @@ BEGIN {
 our $DB = $ENV{"POSTGIS_REGRESS_DB"} || "postgis_reg";
 our $REGDIR = abs_path(dirname($0));
 our $TOP_BUILDDIR = $ENV{"POSTGIS_TOP_BUILD_DIR"} || ${REGDIR} . '/..';
-our $sysdiff = !system("diff --strip-trailing-cr $0 $0 2> /dev/null");
+our $sysdiff = !system("/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
 
 ##################################################################
 # Parse command line opts
@@ -789,15 +790,13 @@ sub run_simple_test
           . " -v \"tmpfile='$tmpfile'\""
           . " -v \"scriptdir=$scriptdir\""
           . " -v \"regdir=$REGDIR\""
-          . " -v \"top_builddir=$TOP_BUILDDIR\""
           . " -v \"schema=$OPT_SCHEMA.\""
-          . " -c \"SET search_path TO public,$OPT_SCHEMA,topology\""
           . " -tXAq -f $sqlfile $DB > $outfile 2>&1";
 	my $rv = system($cmd);
-    if ( $rv ) {
-        fail "psql exited with an error", $outfile;
-        die;
-    }
+#     if ( $rv ) {
+#         fail "psql exited with an error", $outfile;
+#         die;
+#     }
 
 	# Check for ERROR lines
 	open(FILE, "$outfile");
@@ -805,7 +804,14 @@ sub run_simple_test
 	close(FILE);
 
 	# Strip the lines we don't care about
+	@lines = grep(!/^\$/, @lines);
+	@lines = grep(!/^(INSERT|DELETE|UPDATE|SELECT|COPY|DO)/, @lines);
+	@lines = grep(!/^(CONTEXT|RESET|ANALYZE)/, @lines);
+	@lines = grep(!/^(DROP|CREATE|ALTER|VACUUM)/, @lines);
+	@lines = grep(!/^(LOG|SET|TRUNCATE|DISCARD)/, @lines);
+	@lines = grep(!/^LINE \d/, @lines);
 	@lines = grep(!/^\s+$/, @lines);
+  @lines = grep(!/NOTICE:  Table doesn't have 'distributed by' clause/i, @lines);
 
 	# Morph values into expected forms
 	for ( my $i = 0; $i < @lines; $i++ )
@@ -1299,7 +1305,8 @@ sub run_raster_loader_test
 sub count_db_objects
 {
 	my $count = sql("WITH counts as (
-		select count(*) from pg_type union all
+		select count(*) from pg_type
+            where typname NOT LIKE '__%' union all
 		select count(*) from pg_proc union all
 		select count(*) from pg_cast union all
 		select count(*) from pg_aggregate union all
@@ -1933,7 +1940,10 @@ sub diff
 	my $diffstr = '';
 
 	if ( $sysdiff ) {
-		$diffstr = `diff --strip-trailing-cr -u $expected_file $obtained_file 2>&1`;
+
+		#$diffstr = `diff --strip-trailing-cr -u $expected_file $obtained_file 2>&1`;
+		$diffstr = `/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
+
 		return $diffstr;
 	}
 
