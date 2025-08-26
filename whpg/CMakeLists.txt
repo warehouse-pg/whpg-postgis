@@ -7,13 +7,13 @@ project(postgis-whpg)
 
 include(ExternalProject)
 
-set(INSTALL_DIR ${CMAKE_BINARY_DIR}/usr)
-set(DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/3rdparty/download)
-set(PATCH_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
-set(POSTGIS_SOURCE_DIR ${CMAKE_SOURCE_DIR}/..)
-# Increase this if you have a powerful machine
-if(NOT JOBS)
-    set(JOBS 4)
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE "Release" CACHE
+        STRING "Choose the type of build." FORCE)
+endif()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+set(CONFIGURE_ENABLE_DEBUG --enable-debug)
 endif()
 
 if(DEFINED ENV{GPHOME})
@@ -24,6 +24,17 @@ else()
         "Error: The GPHOME environment variable is not set."
         "Please set it to your Greenplum Database installation path before"
         "running cmake.")
+endif()
+
+set(INSTALL_DIR ${CMAKE_BINARY_DIR}/usr)
+set(DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/3rdparty/download)
+set(CMAKE_INSTALL_PREFIX ${GPHOME_DIR})
+set(POSTGRIS_TEMP_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/postgris_temp_install)
+set(PATCH_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
+set(POSTGIS_SOURCE_DIR ${CMAKE_SOURCE_DIR}/..)
+# Increase this if you have a powerful machine
+if(NOT JOBS)
+    set(JOBS 4)
 endif()
 
 ExternalProject_Add(
@@ -38,9 +49,9 @@ ExternalProject_Add(
     CONFIGURE_COMMAND
     ${CMAKE_COMMAND} -E env
     "CFLAGS=-fPIC"
-    <SOURCE_DIR>/configure --prefix=${INSTALL_DIR} --enable-shared=no
+    <SOURCE_DIR>/configure --prefix=${CMAKE_INSTALL_PREFIX} --enable-shared=no
     BUILD_COMMAND make -j${JOBS}
-    INSTALL_COMMAND make install
+    INSTALL_COMMAND make install prefix=${INSTALL_DIR}
 )
 
 ExternalProject_Add(
@@ -125,7 +136,7 @@ ExternalProject_Add(
     "CFLAGS=-fPIC"
     "CXXFLAGS=-fPIC"
     <SOURCE_DIR>/configure
-    --prefix=${INSTALL_DIR}
+    --prefix=${CMAKE_INSTALL_PREFIX}
     --enable-shared=no
     --with-xml2=${INSTALL_DIR}/bin/xml2-config
     --with-libjson-c=${INSTALL_DIR}
@@ -135,8 +146,11 @@ ExternalProject_Add(
     --without-hdf4
     --without-hdf5
     BUILD_COMMAND make -j${JOBS}
-    INSTALL_COMMAND make install
-    COMMAND patch ${INSTALL_DIR}/bin/gdal-config ${PATCH_DIR}/gdal-config.patch
+    INSTALL_COMMAND make install prefix=${INSTALL_DIR}
+    COMMAND
+    patch ${INSTALL_DIR}/bin/gdal-config ${PATCH_DIR}/gdal-config.patch
+    COMMAND
+    sed -i "s|${GPHOME_DIR}|${INSTALL_DIR}|g" ${INSTALL_DIR}/bin/gdal-config
 
     DEPENDS libxml2 json-c geos
 )
@@ -164,28 +178,11 @@ ExternalProject_Add(
     --with-raster
     --without-topology
     BUILD_COMMAND make -j${JOBS}
-    INSTALL_COMMAND echo "Use 'make install-postgis' to install"
+    INSTALL_COMMAND
+    make install DESTDIR=${POSTGRIS_TEMP_INSTALL_PREFIX}
     BUILD_IN_SOURCE YES
 
     DEPENDS proj geos gdal libxml2 json-c
-)
-
-add_custom_target(
-    install-postgis make install
-    WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}
-    DEPENDS postgis
-)
-
-add_custom_target(
-    clean-postgis make distclean
-    WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}
-    DEPENDS postgis
-)
-
-add_custom_target(
-    uninstall-postgis make uninstall
-    WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}
-    DEPENDS postgis
 )
 
 add_custom_target(
@@ -193,3 +190,12 @@ add_custom_target(
     WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}/regress
     DEPENDS postgis
 )
+
+install(DIRECTORY ${INSTALL_DIR}/share/proj TYPE DATA)
+install(DIRECTORY ${INSTALL_DIR}/share/gdal TYPE DATA)
+install(DIRECTORY
+    ${POSTGRIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/bin/ TYPE BIN)
+install(DIRECTORY
+    ${POSTGRIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/share/ TYPE DATA)
+install(DIRECTORY
+    ${POSTGRIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/lib/ TYPE LIB)

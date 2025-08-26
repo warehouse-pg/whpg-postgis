@@ -18,20 +18,20 @@ make
 
 # Install the extension
 
-From the build directory:
+From the build directory, install both postgis and dependencies:
 
 ```
 cd build
-make install-postgis
+make install
 ```
 
-From the source root directory
+From the source root directory, this won't install the dependencies:
 
 ```
 make install
 ```
 
-# Run CMakeLists
+# Run tests
 
 
 From the build directory:
