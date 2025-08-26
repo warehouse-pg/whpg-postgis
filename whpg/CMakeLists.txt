@@ -186,7 +186,8 @@ ExternalProject_Add(
 )
 
 add_custom_target(
-    installcheck-postgis make test
+    installcheck-postgis
+    RUNTESTFLAGS="--verbose" make test
     WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}/regress
     DEPENDS postgis
 )
