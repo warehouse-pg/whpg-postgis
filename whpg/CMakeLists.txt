@@ -165,7 +165,7 @@ ExternalProject_Add(
     COMMAND
     ${CMAKE_COMMAND} -E env
     "CFLAGS=-std=gnu99 -fPIC"
-    "LDFLAGS=-lm -lstdc++"
+    "LDFLAGS=-lm -lstdc++ -ltiff -L${GPHOME_DIR}/lib "
     <SOURCE_DIR>/configure
     --prefix=${GPHOME_DIR}
     --exec-prefix=${GPHOME_DIR}
