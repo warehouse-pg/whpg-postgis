@@ -26,9 +26,19 @@ else()
         "running cmake.")
 endif()
 
+# For the local dev build, set this to the $GPHOME.
+# proj and gdal should use `/usr/local/greenplum-db` as the prefix, to make
+# sure it can find the `share/proj` and `share/gdal` at runtime.
+if(NOT PROJ_GDAL_PREFIX)
+    set(PROJ_GDAL_PREFIX /usr/local/greenplum-db)
+    message(STATUS
+        "gdal and proj will use '${PROJ_GDAL_PREFIX}' as the prefix.")
+endif()
+# For the cmake install target
+set(CMAKE_INSTALL_PREFIX ${GPHOME_DIR})
+
 set(INSTALL_DIR ${CMAKE_BINARY_DIR}/usr)
 set(DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/3rdparty/download)
-set(CMAKE_INSTALL_PREFIX ${GPHOME_DIR})
 set(POSTGIS_TEMP_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/postgis_temp_install)
 set(PATCH_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
 set(POSTGIS_SOURCE_DIR ${CMAKE_SOURCE_DIR}/..)
@@ -49,7 +59,7 @@ ExternalProject_Add(
     CONFIGURE_COMMAND
     ${CMAKE_COMMAND} -E env
     "CFLAGS=-fPIC"
-    <SOURCE_DIR>/configure --prefix=${CMAKE_INSTALL_PREFIX} --enable-shared=no
+    <SOURCE_DIR>/configure --prefix=${PROJ_GDAL_PREFIX} --enable-shared=no
     BUILD_COMMAND make -j${JOBS}
     INSTALL_COMMAND make install prefix=${INSTALL_DIR}
 )
@@ -136,7 +146,7 @@ ExternalProject_Add(
     "CFLAGS=-fPIC"
     "CXXFLAGS=-fPIC"
     <SOURCE_DIR>/configure
-    --prefix=${CMAKE_INSTALL_PREFIX}
+    --prefix=${PROJ_GDAL_PREFIX}
     --enable-shared=no
     --with-xml2=${INSTALL_DIR}/bin/xml2-config
     --with-libjson-c=${INSTALL_DIR}
@@ -150,7 +160,7 @@ ExternalProject_Add(
     COMMAND
     patch ${INSTALL_DIR}/bin/gdal-config ${PATCH_DIR}/gdal-config.patch
     COMMAND
-    sed -i "s|${GPHOME_DIR}|${INSTALL_DIR}|g" ${INSTALL_DIR}/bin/gdal-config
+    sed -i "s|${PROJ_GDAL_PREFIX}|${INSTALL_DIR}|g" ${INSTALL_DIR}/bin/gdal-config
 
     DEPENDS libxml2 json-c geos
 )
@@ -195,8 +205,10 @@ add_custom_target(
 install(DIRECTORY ${INSTALL_DIR}/share/proj TYPE DATA)
 install(DIRECTORY ${INSTALL_DIR}/share/gdal TYPE DATA)
 install(DIRECTORY
-    ${POSTGIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/bin/ TYPE BIN)
+    ${POSTGIS_TEMP_INSTALL_PREFIX}${GPHOME_DIR}/bin/ TYPE BIN)
 install(DIRECTORY
-    ${POSTGIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/share/ TYPE DATA)
+    ${POSTGIS_TEMP_INSTALL_PREFIX}${GPHOME_DIR}/share/ TYPE DATA)
 install(DIRECTORY
-    ${POSTGIS_TEMP_INSTALL_PREFIX}${CMAKE_INSTALL_PREFIX}/lib/ TYPE LIB)
+    ${POSTGIS_TEMP_INSTALL_PREFIX}${GPHOME_DIR}/lib/ TYPE LIB)
+install(DIRECTORY
+    ${POSTGIS_TEMP_INSTALL_PREFIX}${GPHOME_DIR}/include/ TYPE INCLUDE)
