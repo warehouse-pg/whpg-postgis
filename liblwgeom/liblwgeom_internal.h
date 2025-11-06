@@ -247,11 +247,20 @@ lwvarlena_t *geohash_point(double longitude, double latitude, int precision);
 void decode_geohash_bbox(char *geohash, double *lat, double *lon, int precision);
 
 /*
-* Point comparisons
+* Point comparisons (FP tolerance based)
 */
 int p4d_same(const POINT4D *p1, const POINT4D *p2);
 int p3d_same(const POINT3D *p1, const POINT3D *p2);
 int p2d_same(const POINT2D *p1, const POINT2D *p2);
+
+/*
+ * Non-tolerance based equality for points
+ * whereas the p#d_same function are tolerance based
+ */
+#define P2D_SAME_STRICT(a,b) ((a)->x == (b)->x && (a)->y == (b)->y)
+#define P3DZ_SAME_STRICT(a,b) ((a)->x == (b)->x && (a)->y == (b)->y && (a)->z == (b)->z )
+#define P3DM_SAME_STRICT(a,b) ((a)->x == (b)->x && (a)->y == (b)->y && (a)->m == (b)->m )
+#define P4D_SAME_STRICT(a,b) ((a)->x == (b)->x && (a)->y == (b)->y && (a)->z == (b)->z && (a)->m == (b)->m )
 
 /*
 * Area calculations
@@ -424,6 +433,7 @@ int lw_arc_side(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3, const P
 int lw_arc_calculate_gbox_cartesian_2d(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3, GBOX *gbox);
 double lw_arc_center(const POINT2D *p1, const POINT2D *p2, const POINT2D *p3, POINT2D *result);
 int lw_pt_in_seg(const POINT2D *P, const POINT2D *A1, const POINT2D *A2);
+int lw_pt_on_segment(const POINT2D* A1, const POINT2D* A2, const POINT2D* P);
 int lw_pt_in_arc(const POINT2D *P, const POINT2D *A1, const POINT2D *A2, const POINT2D *A3);
 int lw_arc_is_pt(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3);
 double lw_seg_length(const POINT2D *A1, const POINT2D *A2);
@@ -433,6 +443,8 @@ int ptarray_contains_point(const POINTARRAY *pa, const POINT2D *pt);
 int ptarrayarc_contains_point(const POINTARRAY *pa, const POINT2D *pt);
 int ptarray_contains_point_partial(const POINTARRAY *pa, const POINT2D *pt, int check_closed, int *winding_number);
 int ptarrayarc_contains_point_partial(const POINTARRAY *pa, const POINT2D *pt, int check_closed, int *winding_number);
+int ptarray_raycast_intersections(const POINTARRAY *pa, const POINT2D *p, int *on_boundary);
+int ptarrayarc_raycast_intersections(const POINTARRAY *pa, const POINT2D *p, int *on_boundary);
 int lwcompound_contains_point(const LWCOMPOUND *comp, const POINT2D *pt);
 int lwgeom_contains_point(const LWGEOM *geom, const POINT2D *pt);
 

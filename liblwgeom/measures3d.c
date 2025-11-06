@@ -515,7 +515,7 @@ lw_dist3d_recursive(const LWGEOM *lwg1, const LWGEOM *lwg2, DISTPTS3D *dl)
 			g1 = (LWGEOM *)lwg1;
 
 		if (lwgeom_is_empty(g1))
-			return LW_TRUE;
+			continue;
 
 		if (lwgeom_is_collection(g1))
 		{
@@ -530,6 +530,9 @@ lw_dist3d_recursive(const LWGEOM *lwg1, const LWGEOM *lwg2, DISTPTS3D *dl)
 				g2 = c2->geoms[j];
 			else
 				g2 = (LWGEOM *)lwg2;
+
+			if (lwgeom_is_empty(g2))
+				continue;
 
 			if (lwgeom_is_collection(g2))
 			{
@@ -1151,6 +1154,13 @@ lw_dist3d_seg_seg(POINT3DZ *s1p1, POINT3DZ *s1p2, POINT3DZ *s2p1, POINT3DZ *s2p2
 	{
 		dl->twisted = ((dl->twisted) * (-1));
 		return lw_dist3d_pt_seg(s2p1, s1p1, s1p2, dl);
+	}
+	/*s2p1 and s1p1 are the same point */
+	if ((s2p1->x == s1p1->x) && (s2p1->y == s1p1->y) && (s2p1->z == s1p1->z))
+	{
+		dl->distance = 0.0;
+		dl->p1 = dl->p2 = *s2p1;
+		return LW_TRUE;
 	}
 
 	/*

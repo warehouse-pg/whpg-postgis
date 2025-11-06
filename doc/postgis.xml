@@ -12,9 +12,9 @@
 
 <!-- Change these values to update the version numbers referenced within the documentation -->
 <!ENTITY last_proj_release_version "9.0.1">
-<!ENTITY last_geos_release_version "3.11.0">
+<!ENTITY last_geos_release_version "3.11.1">
 <!ENTITY min_postgres_version "11">
-<!ENTITY max_postgres_version "15">
+<!ENTITY max_postgres_version "17">
 
 <!ENTITY introduction SYSTEM "introduction.xml">
 <!ENTITY installation SYSTEM "installation.xml">
@@ -70,6 +70,13 @@
  This method implements the <ulink
  url='http://www.opengeospatial.org/standards/sfs'>OGC Simple Features
  Implementation Specification for SQL 1.1.</ulink>">
+
+<!ENTITY overlay_gridsize_arg
+"If the optional <code>gridSize</code> parameter is given (GEOS-3.9.0 or higher required),
+all result vertices are guaranteed to fall on a grid of the specified
+size.  For the operation to give predictable results all the input vertices
+must fall already on the specified grid, see <xref linkend='ST_ReducePrecision'/>.
+">
 
 <!ENTITY sqlmm_compliant
 "<inlinemediaobject>

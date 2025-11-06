@@ -28,8 +28,6 @@
  */
 
 #include <postgres.h>
-#include <fmgr.h>
-#include <funcapi.h> /* for SRF */
 #include <utils/builtins.h> /* for text_to_cstring() */
 #include <access/htup_details.h> /* for heap_form_tuple() */
 #include <utils/lsyscache.h> /* for get_typlenbyvalalign */
@@ -672,7 +670,7 @@ Datum RASTER_InterpolateRaster(PG_FUNCTION_ARGS)
 	LWGEOM *lwgeom;
 	double *xcoords, *ycoords, *zcoords;
 
-	GSERIALIZED *gser = (GSERIALIZED*)PG_GETARG_POINTER(0);
+	GSERIALIZED *gser = (GSERIALIZED*)PG_DETOAST_DATUM(PG_GETARG_DATUM(0));
 
 	/* Z value is required to drive the grid heights */
 	if (!gserialized_has_z(gser))

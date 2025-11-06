@@ -3657,7 +3657,7 @@ Datum ST_ModEdgeSplit(PG_FUNCTION_ARGS)
   node_id = lwt_ModEdgeSplit(topo, edge_id, pt, 0);
   POSTGIS_DEBUG(1, "lwt_ModEdgeSplit returned");
   lwgeom_free(lwgeom);
-  PG_FREE_IF_COPY(geom, 3);
+  PG_FREE_IF_COPY(geom, 2);
   lwt_FreeTopology(topo);
 
   if ( node_id == -1 )
@@ -3727,7 +3727,7 @@ Datum ST_NewEdgesSplit(PG_FUNCTION_ARGS)
   node_id = lwt_NewEdgesSplit(topo, edge_id, pt, 0);
   POSTGIS_DEBUG(1, "lwt_NewEdgesSplit returned");
   lwgeom_free(lwgeom);
-  PG_FREE_IF_COPY(geom, 3);
+  PG_FREE_IF_COPY(geom, 2);
   lwt_FreeTopology(topo);
 
   if ( node_id == -1 )
@@ -4220,6 +4220,10 @@ Datum ST_GetFaceEdges(PG_FUNCTION_ARGS)
 
   /* get state */
   state = funcctx->user_fctx;
+  if ( ! state )
+  {
+    SRF_RETURN_DONE(funcctx);
+  }
 
   if ( state->curr == state->nelems )
   {
@@ -5101,6 +5105,13 @@ Datum TopoGeo_AddLinestring(PG_FUNCTION_ARGS)
         PG_RETURN_NULL();
       }
     }
+    /* Nothing to do if line is empty */
+    if ( lwline_is_empty(ln) )
+    {
+      lwgeom_free(lwgeom);
+      PG_FREE_IF_COPY(geom, 1);
+      PG_RETURN_NULL();
+    }
 
     tol = PG_GETARG_FLOAT8(2);
     if ( tol < 0 )
@@ -5439,7 +5450,7 @@ Datum GetRingEdges(PG_FUNCTION_ARGS)
   SRF_RETURN_NEXT(funcctx, result);
 }
 
-/*  GetFaceContainingPoint(atopology, point) */
+/* GetFaceContainingPoint(atopology, point) */
 Datum GetFaceContainingPoint(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(GetFaceContainingPoint);
 Datum GetFaceContainingPoint(PG_FUNCTION_ARGS)
@@ -5451,6 +5462,12 @@ Datum GetFaceContainingPoint(PG_FUNCTION_ARGS)
   LWGEOM *lwgeom;
   LWPOINT *pt;
   LWT_TOPOLOGY *topo;
+
+  if ( PG_ARGISNULL(0) || PG_ARGISNULL(1) )
+  {
+    /* should only happen when the SQL function is not declared STRICT */
+    PG_RETURN_NULL();
+  }
 
   toponame_text = PG_GETARG_TEXT_P(0);
   toponame = text_to_cstring(toponame_text);
@@ -5464,6 +5481,14 @@ Datum GetFaceContainingPoint(PG_FUNCTION_ARGS)
     lwgeom_free(lwgeom);
     PG_FREE_IF_COPY(geom, 1);
     lwpgerror("Second argument must be a point geometry");
+    PG_RETURN_NULL();
+  }
+
+  if ( lwpoint_is_empty(pt) )
+  {
+    lwgeom_free(lwgeom);
+    PG_FREE_IF_COPY(geom, 1);
+    lwpgerror("Second argument needs be a non-empty point");
     PG_RETURN_NULL();
   }
 

@@ -204,7 +204,44 @@ SELECT 't6', 'clean', topology.RemoveUnusedPrimitives('city_data');
 SELECT 't6', 'changed', * FROM features.check_changed_features();
 SELECT 't6', 'invalidity', * FROM topology.ValidateTopology('city_data');
 
+
+-- See https://trac.osgeo.org/postgis/ticket/5289
+SELECT NULL FROM (
+  SELECT toTopoGeom(
+    ST_MakeLine(
+      ST_EndPoint( ST_GeometryN(feature,1) ),
+      ST_StartPoint( ST_GeometryN(feature,1) )
+    ),
+    feature
+  ) FROM features.city_streets WHERE feature_name = 'R2'
+) foo;
+UPDATE features.city_streets SET geom = feature::geometry
+WHERE feature_name = 'R2';
+SELECT '#5289', 'clean', topology.RemoveUnusedPrimitives('city_data');
+SELECT '#5289', 'changed', * FROM features.check_changed_features();
+SELECT '#5289', 'invalidity', * FROM topology.ValidateTopology('city_data');
+
+--
+-- See https://trac.osgeo.org/postgis/ticket/5303
+--
+
+-- Extend lineal feature R4 to include usage of edge 2
+-- so that node X becomes "unused" (if it wasn't for
+-- being required as endpoint of closed edge 2) while
+-- edges themselves would still be both used by R4 feature.
+UPDATE features.city_streets
+SET feature = TopoGeom_addElement(feature, ARRAY[2, 2])
+WHERE feature_name = 'R4';
+
+SELECT '#5303', 'clean', topology.RemoveUnusedPrimitives('city_data');
+SELECT '#5303', 'changed', * FROM features.check_changed_features();
+SELECT '#5303', 'invalidity', * FROM topology.ValidateTopology('city_data');
+
+
+--
 -- Cleanup
+--
+
 SELECT NULL FROM DropTopology('city_data');
 DROP SCHEMA features CASCADE;
 

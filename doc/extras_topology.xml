@@ -1796,7 +1796,7 @@ Changes the shape of an edge without affecting the topology structure.
 			<refsynopsisdiv>
 				<funcsynopsis>
 					<funcprototype>
-					<funcdef>integer <function>ST_ChangeEdgeGeom</function></funcdef>
+					<funcdef>text <function>ST_ChangeEdgeGeom</function></funcdef>
 					<paramdef><type>varchar </type> <parameter>atopology</parameter></paramdef>
 					<paramdef><type>integer </type> <parameter>anedge</parameter></paramdef>
 					<paramdef><type>geometry </type> <parameter>acurve</parameter></paramdef>
@@ -3790,7 +3790,7 @@ Refer to <xref linkend="toTopoGeom" />.
 			<refsection>
                 <title>Description</title>
 
-                <para>Returns a set of element_id,element_type (topoelements) for a given topogeometry object in <varname>toponame</varname> schema.</para>
+                <para>Returns a set of element_id,element_type (topoelements) corresponding to primitive topology elements <xref linkend="topoelement"/> (1: nodes, 2: edges, 3: faces) that a given topogeometry object in <varname>toponame</varname> schema is composed of.</para>
                 <para>tg_id is the topogeometry id of the topogeometry object in the topology in the layer denoted by <varname>layer_id</varname> in the topology.layer table.</para>
 
                 <!-- use this format if new function -->
@@ -4322,9 +4322,9 @@ The dump file format is a compressed tar archive of a
 at least a <filename>pgtopo_dump_version</filename> file with
 format version info. As of version <code>1</code> the directory
 contains tab-delimited CSV files with data of the topology
-primitive tables (node, edge_data, face, relation), of the
-topology and layer records associated with it, and optionall
-(if <code>--skip-layers</code> is not given) a custom-format
+primitive tables (node, edge_data, face, relation), the
+topology and layer records associated with it and
+(unless <code>--skip-layers</code> is given) a custom-format
 PostgreSQL dump of tables reported as being layers of the given
 topology.
         </para>

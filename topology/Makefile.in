@@ -104,7 +104,7 @@ endif
 
 # Generate any .sql file from .sql.in files by running them through the SQL pre-processor
 %.sql: %.sql.in
-	$(SQLPP) -I@top_builddir@/postgis $< | grep -v '^#' | \
+	$(SQLPP) -I@top_builddir@/postgis -I@top_srcdir@ $< | grep -v '^#' | \
 	$(PERL) -lpe "s'MODULE_PATHNAME'\$(MODULEPATH)'g" > $@
 
 #Generate upgrade script by stripping things that can't be reinstalled
@@ -143,6 +143,7 @@ topology.sql: \
 	sql/topogeometry/topogeom_edit.sql.in \
 	sql/topogeometry/simplify.sql.in \
 	sql/predicates.sql.in \
+	../libpgcommon/sql/AddToSearchPath.sql.inc \
 	../postgis/sqldefines.h \
 	../postgis_revision.h
 

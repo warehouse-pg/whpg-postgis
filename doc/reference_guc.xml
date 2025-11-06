@@ -18,6 +18,7 @@ These can be set globally, by database, by session or by transaction. Best set a
         <title>Description</title>
         <para>This GUC is only relevant if you compiled PostGIS with sfcgal support.  By default <varname>geos</varname> backend is used for functions where both GEOS and SFCGAL have the same named function.  This variable allows you to override and make sfcgal the backend to service the request.</para>
         <para>Availability: 2.1.0</para>
+        <warning><para>This switch does nothing as of PostGIS 3.0, DO NOT USE.</para></warning>
       </refsection>
 
       <refsection>
@@ -261,7 +262,7 @@ SELECT pg_reload_conf();
 
   <refentry id="postgis_gdal_vsi_options">
             <refnamediv>
-                <refname>postgis.gdal_config_options</refname>
+                <refname>postgis.gdal_vsi_options</refname>
                 <refpurpose>
                     A string configuration to set options used when working with an out-db raster.
                 </refpurpose>
@@ -282,12 +283,12 @@ SELECT pg_reload_conf();
                 <para>Set <varname>postgis.gdal_vsi_options</varname> for current session:</para>
 
                 <programlisting>
-SET postgis.gdal_config_options = 'AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxx AWS_SECRET_ACCESS_KEY=yyyyyyyyyyyyyyyyyyyyyyyyyy';
+SET postgis.gdal_vsi_options = 'AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxx AWS_SECRET_ACCESS_KEY=yyyyyyyyyyyyyyyyyyyyyyyyyy';
                 </programlisting>
 
                 <para>Set <varname>postgis.gdal_vsi_options</varname> just for the <emphasis>current transaction</emphasis> using the <varname>LOCAL</varname> keyword:</para>
                 <programlisting>
-SET LOCAL postgis.gdal_config_options = 'AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxx AWS_SECRET_ACCESS_KEY=yyyyyyyyyyyyyyyyyyyyyyyyyy';
+SET LOCAL postgis.gdal_vsi_options = 'AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxx AWS_SECRET_ACCESS_KEY=yyyyyyyyyyyyyyyyyyyyyyyyyy';
                 </programlisting>
             </refsection>
 

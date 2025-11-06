@@ -637,7 +637,7 @@ BEGIN
 
         new_name := pg_catalog.regexp_replace(
             rec.proc::text,
-            '_deprecated_by_postgis[^(]*\\(.*',
+            E'_deprecated_by_postgis[^(]*\\\\(.*',
             ''
         );
 
@@ -754,31 +754,15 @@ DECLARE
     postgis_upgrade_info RECORD;
     postgis_upgrade_info_func_code TEXT;
 BEGIN
-    --
-    -- This uses postgis_lib_version() rather then
-    -- MODULE_scripts_installed() as in 1.0 because
-    -- in the 1.0 => 1.1 transition that would result
-    -- in an impossible upgrade:
-    --
-    --   from 0.3.0 to 1.1.0
-    --
-    -- Next releases will still be ok as
-    -- postgis_lib_version() and MODULE_scripts_installed()
-    -- would both return actual PostGIS release number.
-    --
-    BEGIN
-        SELECT into old_scripts MODULE_lib_version();
-    EXCEPTION WHEN OTHERS THEN
-        RAISE DEBUG 'Got %', SQLERRM;
-        SELECT into old_scripts MODULE_scripts_installed();
-    END;
-    SELECT into new_scripts 'NEWVERSION';
+
+    old_scripts := MODULE_scripts_installed();
+    new_scripts := 'NEWVERSION';
 
     BEGIN
         new_ver_int := pg_catalog.string_to_array(
             pg_catalog.regexp_replace(
                 new_scripts,
-                '[^\d.].*',
+                E'[^\\d.].*',
                 ''
             ),
             '.'
@@ -791,7 +775,7 @@ BEGIN
         old_ver_int := pg_catalog.string_to_array(
             pg_catalog.regexp_replace(
                 old_scripts,
-                '[^\d.].*',
+                E'[^\\d.].*',
                 ''
             ),
             '.'

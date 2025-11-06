@@ -667,7 +667,7 @@ $$
     replace(c.conname, 'check_topogeom_', '') col,
     --c.consrc src,
     regexp_matches(c.consrc,
-      '\.topology_id = (\d+).*\.layer_id = (\d+).*\.type = (\d+)') inf
+      E'\\.topology_id = (\\d+).*\\.layer_id = (\\d+).*\\.type = (\\d+)') inf
   FROM (SELECT conname, connamespace, conrelid, conkey, pg_get_constraintdef(oid) As consrc
 		    FROM pg_constraint) AS c, pg_class r, pg_namespace n
   WHERE c.conname LIKE 'check_topogeom_%'
@@ -1435,5 +1435,7 @@ GRANT SELECT ON topology.topology TO PUBLIC;
 GRANT SELECT ON topology.layer TO PUBLIC;
 -- See https://trac.osgeo.org/postgis/ticket/5124
 GRANT USAGE ON SCHEMA topology TO PUBLIC;
+-- See https://trac.osgeo.org/postgis/ticket/5395
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA topology TO PUBLIC;
 
 COMMIT;

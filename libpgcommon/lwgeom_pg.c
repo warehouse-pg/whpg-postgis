@@ -114,17 +114,51 @@ postgis_get_extension_schema(Oid ext_oid)
 static Oid
 postgis_get_full_version_schema()
 {
-	const char* proname = "postgis_full_version";
-	List* names = stringToQualifiedNameList(proname);
-	#if POSTGIS_PGSQL_VERSION < 140
-	FuncCandidateList clist = FuncnameGetCandidates(names, -1, NIL, false, false, false);
-	#else
-	FuncCandidateList clist = FuncnameGetCandidates(names, -1, NIL, false, false, false, false);
-	#endif
-	if (!clist)
+	const char* query =  "SELECT pronamespace "
+		" FROM pg_catalog.pg_proc "
+		" WHERE proname = 'postgis_full_version'";
+	int spi_result;
+	Oid funcNameSpaceOid;
+	if (SPI_OK_CONNECT != SPI_connect())
+	{
+		elog(ERROR, "%s: could not connect to SPI manager", __func__);
 		return InvalidOid;
+	}
 
-	return get_func_namespace(clist->oid);
+	/* Execute the query, noting the readonly status of this SQL */
+	spi_result = SPI_execute(query, true, 0);
+
+	if (spi_result != SPI_OK_SELECT || SPI_tuptable == NULL){
+		elog(ERROR, "%s: error executing query %d", __func__, spi_result);
+		SPI_finish();
+		return InvalidOid;
+	}
+
+	/* Read back the OID of the function namespace, only if one result returned
+	  If more than one, then this install is f..cked.
+		If 0 then postgis is not installed at all */
+	if (SPI_processed == 1)
+	{
+		TupleDesc tupdesc;
+		SPITupleTable *tuptable = SPI_tuptable;
+		HeapTuple tuple;
+
+		tupdesc = SPI_tuptable->tupdesc;
+		tuptable = SPI_tuptable;
+		tuple = tuptable->vals[0];
+		funcNameSpaceOid = atoi(SPI_getvalue(tuple, tupdesc, 1));
+
+		if (SPI_tuptable) SPI_freetuptable(tuptable);
+		SPI_finish();
+	}
+	else
+	{
+		elog(ERROR, "Cannot determine install schema of postgis_full_version function.");
+		SPI_finish();
+		return InvalidOid;
+	}
+
+	return funcNameSpaceOid;
 }
 
 
@@ -515,11 +549,15 @@ postgis_guc_find_option(const char *name)
 	 * By equating const char ** with struct config_generic *, we are assuming
 	 * the name field is first in config_generic.
 	 */
+#if POSTGIS_PGSQL_VERSION >= 160
+	res = (struct config_generic **) find_option((void *) &key, false, true, ERROR);
+#else
 	res = (struct config_generic **) bsearch((void *) &key,
 		 (void *) get_guc_variables(),
 		 GetNumConfigOptions(),
 		 sizeof(struct config_generic *),
 		 postgis_guc_var_compare);
+#endif
 
 	/* Found nothing? Good */
 	if ( ! res ) return 0;

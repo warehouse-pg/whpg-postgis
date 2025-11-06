@@ -715,58 +715,6 @@ edge_point_side(const GEOGRAPHIC_EDGE *e, const GEOGRAPHIC_POINT *p)
 }
 
 /**
-* Returns the angle in radians at point B of the triangle formed by A-B-C
-*/
-static double
-sphere_angle(const GEOGRAPHIC_POINT *a, const GEOGRAPHIC_POINT *b,  const GEOGRAPHIC_POINT *c)
-{
-	POINT3D normal1, normal2;
-	robust_cross_product(b, a, &normal1);
-	robust_cross_product(b, c, &normal2);
-	normalize(&normal1);
-	normalize(&normal2);
-	return sphere_distance_cartesian(&normal1, &normal2);
-}
-
-/**
-* Computes the spherical area of a triangle. If C is to the left of A/B,
-* the area is negative. If C is to the right of A/B, the area is positive.
-*
-* @param a The first triangle vertex.
-* @param b The second triangle vertex.
-* @param c The last triangle vertex.
-* @return the signed area in radians.
-*/
-static double
-sphere_signed_area(const GEOGRAPHIC_POINT *a, const GEOGRAPHIC_POINT *b, const GEOGRAPHIC_POINT *c)
-{
-	double angle_a, angle_b, angle_c;
-	double area_radians = 0.0;
-	int side;
-	GEOGRAPHIC_EDGE e;
-
-	angle_a = sphere_angle(b,a,c);
-	angle_b = sphere_angle(a,b,c);
-	angle_c = sphere_angle(b,c,a);
-
-	area_radians = angle_a + angle_b + angle_c - M_PI;
-
-	/* What's the direction of the B/C edge? */
-	e.start = *a;
-	e.end = *b;
-	side = edge_point_side(&e, c);
-
-	/* Co-linear points implies no area */
-	if ( side == 0 )
-		return 0.0;
-
-	/* Add the sign to the area */
-	return side * area_radians;
-}
-
-
-
-/**
 * Returns true if the point p is on the great circle plane.
 * Forms the scalar triple product of A,B,p and if the volume of the
 * resulting parallelepiped is near zero the point p is on the
@@ -1805,39 +1753,6 @@ lwgeom_segmentize_sphere(const LWGEOM *lwg_in, double max_seg_length)
 }
 
 
-/**
-* Returns the area of the ring (ring must be closed) in square radians (surface of
-* the sphere is 4*PI).
-*/
-double
-ptarray_area_sphere(const POINTARRAY *pa)
-{
-	uint32_t i;
-	const POINT2D *p;
-	GEOGRAPHIC_POINT a, b, c;
-	double area = 0.0;
-
-	/* Return zero on nonsensical inputs */
-	if ( ! pa || pa->npoints < 4 )
-		return 0.0;
-
-	p = getPoint2d_cp(pa, 0);
-	geographic_point_init(p->x, p->y, &a);
-	p = getPoint2d_cp(pa, 1);
-	geographic_point_init(p->x, p->y, &b);
-
-	for ( i = 2; i < pa->npoints-1; i++ )
-	{
-		p = getPoint2d_cp(pa, i);
-		geographic_point_init(p->x, p->y, &c);
-		area += sphere_signed_area(&a, &b, &c);
-		b = c;
-	}
-
-	return fabs(area);
-}
-
-
 static double ptarray_distance_spheroid(const POINTARRAY *pa1, const POINTARRAY *pa2, const SPHEROID *s, double tolerance, int check_intersection)
 {
 	GEOGRAPHIC_EDGE e1, e2;
@@ -2029,67 +1944,14 @@ static double ptarray_distance_spheroid(const POINTARRAY *pa1, const POINTARRAY 
 
 
 /**
-* Calculate the area of an LWGEOM. Anything except POLYGON, MULTIPOLYGON
-* and GEOMETRYCOLLECTION return zero immediately. Multi's recurse, polygons
-* calculate external ring area and subtract internal ring area. A GBOX is
-* required to calculate an outside point.
+* Delegate to the spheroid function with a spherically
+* parameterized spheroid.
 */
 double lwgeom_area_sphere(const LWGEOM *lwgeom, const SPHEROID *spheroid)
 {
-	int type;
-	double radius2 = spheroid->radius * spheroid->radius;
-
-	assert(lwgeom);
-
-	/* No area in nothing */
-	if ( lwgeom_is_empty(lwgeom) )
-		return 0.0;
-
-	/* Read the geometry type number */
-	type = lwgeom->type;
-
-	/* Anything but polygons and collections returns zero */
-	if ( ! ( type == POLYGONTYPE || type == MULTIPOLYGONTYPE || type == COLLECTIONTYPE ) )
-		return 0.0;
-
-	/* Actually calculate area */
-	if ( type == POLYGONTYPE )
-	{
-		LWPOLY *poly = (LWPOLY*)lwgeom;
-		uint32_t i;
-		double area = 0.0;
-
-		/* Just in case there's no rings */
-		if ( poly->nrings < 1 )
-			return 0.0;
-
-		/* First, the area of the outer ring */
-		area += radius2 * ptarray_area_sphere(poly->rings[0]);
-
-		/* Subtract areas of inner rings */
-		for ( i = 1; i < poly->nrings; i++ )
-		{
-			area -= radius2 * ptarray_area_sphere(poly->rings[i]);
-		}
-		return area;
-	}
-
-	/* Recurse into sub-geometries to get area */
-	if ( type == MULTIPOLYGONTYPE || type == COLLECTIONTYPE )
-	{
-		LWCOLLECTION *col = (LWCOLLECTION*)lwgeom;
-		uint32_t i;
-		double area = 0.0;
-
-		for ( i = 0; i < col->ngeoms; i++ )
-		{
-			area += lwgeom_area_sphere(col->geoms[i], spheroid);
-		}
-		return area;
-	}
-
-	/* Shouldn't get here. */
-	return 0.0;
+	SPHEROID s;
+	spheroid_init(&s, WGS84_RADIUS, WGS84_RADIUS);
+	return lwgeom_area_spheroid(lwgeom, &s);
 }
 
 
@@ -2218,13 +2080,13 @@ double lwgeom_distance_spheroid(const LWGEOM *lwgeom1, const LWGEOM *lwgeom2, co
 	type2 = lwgeom2->type;
 
 	/* Make sure we have boxes */
-	if ( lwgeom1->bbox )
+	if ( FLAGS_GET_GEODETIC(lwgeom1->flags) && lwgeom1->bbox )
 		gbox1 = *(lwgeom1->bbox);
 	else
 		lwgeom_calculate_gbox_geodetic(lwgeom1, &gbox1);
 
 	/* Make sure we have boxes */
-	if ( lwgeom2->bbox )
+	if ( FLAGS_GET_GEODETIC(lwgeom2->flags) && lwgeom2->bbox )
 		gbox2 = *(lwgeom2->bbox);
 	else
 		lwgeom_calculate_gbox_geodetic(lwgeom2, &gbox2);
@@ -2629,23 +2491,10 @@ int lwpoly_covers_lwpoly(const LWPOLY *poly1, const LWPOLY *poly2)
 	/* check if all vertices of poly2 are inside poly1 */
 	for (i = 0; i < poly2->nrings; i++)
 	{
-
-		/* every other ring is a hole, check if point is inside the actual polygon */
-		if ( i % 2 == 0)
+		if (LW_FALSE == lwpoly_covers_pointarray(poly1, poly2->rings[i]))
 		{
-			if (LW_FALSE == lwpoly_covers_pointarray(poly1, poly2->rings[i]))
-			{
-				LWDEBUG(4,"returning false, geometry2 has point outside of geometry1");
-				return LW_FALSE;
-			}
-		}
-		else
-		{
-			if (LW_TRUE == lwpoly_covers_pointarray(poly1, poly2->rings[i]))
-			{
-				LWDEBUG(4,"returning false, geometry2 has point inside a hole of geometry1");
-				return LW_FALSE;
-			}
+			LWDEBUG(4,"returning false, geometry2 has point outside of geometry1");
+			return LW_FALSE;
 		}
 	}
 
@@ -3543,7 +3392,14 @@ edge_intersects(const POINT3D *A1, const POINT3D *A2, const POINT3D *B1, const P
 	/* Are A-plane and B-plane basically the same? */
 	ab_dot = dot_product(&AN, &BN);
 
-	if ( FP_EQUALS(fabs(ab_dot), 1.0) )
+	/*
+	* https://trac.osgeo.org/postgis/ticket/5765
+	* Failure because the colinearity check was
+	* triggering due to an overly loose equality
+	* check here.
+	* if ( FP_EQUALS(fabs(ab_dot), 1.0) )
+	*/
+	if ( 1.0 - fabs(ab_dot) <= 10e-16 )
 	{
 		/* Co-linear case */
 		if ( point_in_cone(A1, A2, B1) || point_in_cone(A1, A2, B2) ||
