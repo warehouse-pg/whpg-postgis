@@ -1220,6 +1220,11 @@ static int rtpg_nmapalgebraexpr_callback(
 				if (idx < 1) continue;
 				idx--; /* 1-based now 0-based */
 
+				if (arg->rasters == 1 && i > 7) {
+					elog(ERROR, "rtpg_nmapalgebraexpr_callback: rast2 argument specified in single-raster invocation");
+					return 0;
+				}
+
 				switch (i) {
 					/* [rast.x] */
 					case 0:
@@ -6007,9 +6012,9 @@ Datum RASTER_mapAlgebraFctNgb(PG_FUNCTION_ARGS)
 
     /* pass the nodata mode into the user function */
 #if POSTGIS_PGSQL_VERSION < 120
-    cbdata.arg[1] = CStringGetDatum((char*)txtCallbackParam);
+    cbdata.arg[1] = PointerGetDatum(txtCallbackParam);
 #else
-    cbdata->args[1].value = CStringGetDatum(txtCallbackParam);
+    cbdata->args[1].value = PointerGetDatum(txtCallbackParam);
 #endif
 
     strFromText = text_to_cstring(txtNodataMode);

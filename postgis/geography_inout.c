@@ -271,9 +271,9 @@ Datum geography_as_gml(PG_FUNCTION_ARGS)
 
 	if (VARSIZE_ANY_EXHDR(id_text) > 0)
 	{
-		id_buf = palloc(VARSIZE_ANY_EXHDR(id_text)+1);
+		id_buf = palloc(VARSIZE_ANY_EXHDR(id_text)+2);
 		memcpy(id_buf, VARDATA(id_text), VARSIZE_ANY_EXHDR(id_text));
-		prefix_buf[VARSIZE_ANY_EXHDR(id_text)+1] = '\0';
+		id_buf[VARSIZE_ANY_EXHDR(id_text)+1] = '\0';
 		id = id_buf;
 	}
 
@@ -563,6 +563,11 @@ Datum geography_recv(PG_FUNCTION_ARGS)
 	}
 
 	lwgeom = lwgeom_from_wkb((uint8_t*)buf->data, buf->len, LW_PARSER_CHECK_ALL);
+	if ( !lwgeom )
+	{
+		ereport(ERROR,(errmsg("recv error - invalid geometry")));
+		PG_RETURN_NULL();
+	}
 
 	/* Error on any SRID != default */
 	srid_check_latlong(lwgeom->srid);

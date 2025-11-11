@@ -597,7 +597,9 @@ lwt_AddIsoNode( LWT_TOPOLOGY* topo, LWT_ELEMID face,
 	return _lwt_AddIsoNode( topo, face, pt, skipISOChecks, 1 );
 }
 
-/* Check that an edge does not cross an existing node or edge
+/*
+ * Check that an edge does not cross an existing node and
+ * does not have non-boundary intersection with existing edge
  *
  * @param myself the id of an edge to skip, if any
  *               (for ChangeEdgeGeom). Can use 0 for none.
@@ -691,7 +693,7 @@ _lwt_CheckEdgeCrossing( LWT_TOPOLOGY* topo,
 
     LWDEBUGF(2, "Edge %d converted to GEOS", edge_id);
 
-    /* check if the edge crosses our edge (not boundary-boundary) */
+    /* check if the edge has a non-boundary-boundary intersection with our edge */
 
     relate = GEOSRelateBoundaryNodeRule(eegg, edgegg, 2);
     if ( ! relate ) {
@@ -704,7 +706,7 @@ _lwt_CheckEdgeCrossing( LWT_TOPOLOGY* topo,
 
     LWDEBUGF(2, "Edge %d relate pattern is %s", edge_id, relate);
 
-    match = GEOSRelatePatternMatch(relate, "F********");
+    match = GEOSRelatePatternMatch(relate, "FF*F*****");
     if ( match ) {
       /* error or no interior intersection */
       GEOSGeom_destroy(eegg);
@@ -763,11 +765,42 @@ _lwt_CheckEdgeCrossing( LWT_TOPOLOGY* topo,
       return -1;
     }
 
+    match = GEOSRelatePatternMatch(relate, "*T*******");
+    if ( match ) {
+      _lwt_release_edges(edges, num_edges);
+      GEOSGeom_destroy(edgegg);
+      GEOSGeom_destroy(eegg);
+      GEOSFree(relate);
+      if ( match == 2 ) {
+        lwerror("GEOSRelatePatternMatch error: %s", lwgeom_geos_errmsg);
+      } else {
+        lwerror("Spatial exception - geometry boundary touches interior of edge %"
+                LWTFMT_ELEMID, edge_id);
+      }
+      return -1;
+    }
+
+    match = GEOSRelatePatternMatch(relate, "***T*****");
+    if ( match ) {
+      _lwt_release_edges(edges, num_edges);
+      GEOSGeom_destroy(edgegg);
+      GEOSGeom_destroy(eegg);
+      GEOSFree(relate);
+      if ( match == 2 ) {
+        lwerror("GEOSRelatePatternMatch error: %s", lwgeom_geos_errmsg);
+      } else {
+        lwerror("Spatial exception - boundary of edge % touches interior of geometry"
+                LWTFMT_ELEMID, edge_id);
+      }
+      return -1;
+    }
+
     LWDEBUGF(2, "Edge %d analisys completed, it does no harm", edge_id);
 
     GEOSFree(relate);
     GEOSGeom_destroy(eegg);
   }
+  LWDEBUGF(1, "No edge crossing detected among the %d candidate edges", num_edges);
   if ( edges ) _lwt_release_edges(edges, num_edges);
               /* would be NULL if num_edges was 0 */
 
@@ -858,7 +891,7 @@ lwt_AddIsoEdge( LWT_TOPOLOGY* topo, LWT_ELEMID startNode,
         /* l) Check that start point of acurve match start node geoms. */
         getPoint2d_p(geom->points, 0, &p1);
         getPoint2d_p(n->geom->point, 0, &p2);
-        if ( ! p2d_same(&p1, &p2) )
+        if ( ! P2D_SAME_STRICT(&p1, &p2) )
         {
           _lwt_release_nodes(endpoints, num_nodes);
           lwerror("SQL/MM Spatial exception - "
@@ -871,7 +904,7 @@ lwt_AddIsoEdge( LWT_TOPOLOGY* topo, LWT_ELEMID startNode,
         /* m) Check that end point of acurve match end node geoms. */
         getPoint2d_p(geom->points, geom->points->npoints-1, &p1);
         getPoint2d_p(n->geom->point, 0, &p2);
-        if ( ! p2d_same(&p1, &p2) )
+        if ( ! P2D_SAME_STRICT(&p1, &p2) )
         {
           _lwt_release_nodes(endpoints, num_nodes);
           lwerror("SQL/MM Spatial exception - "
@@ -1307,7 +1340,7 @@ lwt_NewEdgesSplit( LWT_TOPOLOGY* topo, LWT_ELEMID edge,
 
   /* Update all next edge references pointing to old edge id */
 
-  updedge.next_right = newedges[1].edge_id;
+  updedge.next_right = newedges[0].edge_id;
   seledge.next_right = edge;
   seledge.start_node = oldedge->start_node;
   ret = lwt_be_updateEdges(topo,
@@ -1321,7 +1354,7 @@ lwt_NewEdgesSplit( LWT_TOPOLOGY* topo, LWT_ELEMID edge,
     return -1;
   }
 
-  updedge.next_right = -newedges[0].edge_id;
+  updedge.next_right = -newedges[1].edge_id;
   seledge.next_right = -edge;
   seledge.start_node = oldedge->end_node;
   ret = lwt_be_updateEdges(topo,
@@ -1425,7 +1458,7 @@ _lwt_FirstDistinctVertex2D(const POINTARRAY* pa, POINT2D *ref, int from, int dir
   {
     LWDEBUGF(1, "testing point %d", i);
     getPoint2d_p(pa, i, op); /* pick next point */
-    if ( p2d_same(op, &fp) ) continue; /* equal to startpoint */
+    if ( P2D_SAME_STRICT(op,&fp) ) continue; /* equal to startpoint */
     /* this is a good one, neither same of start nor of end point */
     return 1; /* found */
   }
@@ -1489,7 +1522,7 @@ _lwt_InitEdgeEndByLine(edgeend *fee, edgeend *lee, LWLINE *edge,
 /*
  * Find the first edges encountered going clockwise and counterclockwise
  * around a node, starting from the given azimuth, and take
- * note of the face on the both sides.
+ * note of the face on both sides.
  *
  * @param topo the topology to act upon
  * @param node the identifier of the node to analyze
@@ -1575,7 +1608,7 @@ _lwt_FindAdjacentEdges( LWT_TOPOLOGY* topo, LWT_ELEMID node, edgeend *data,
       }
       LWDEBUGF(1, "edge %" LWTFMT_ELEMID
                   " starts on node %" LWTFMT_ELEMID
-                  ", edgeend is %g,%g-%g,%g",
+                  ", edgeend is [%.15g %.15g,%.15g %.15g]",
                   edge->edge_id, node, p1.x, p1.y, p2.x, p2.y);
       if ( ! azimuth_pt_pt(&p1, &p2, &az) ) {{
         LWT_ELEMID id = edge->edge_id;
@@ -1587,7 +1620,7 @@ _lwt_FindAdjacentEdges( LWT_TOPOLOGY* topo, LWT_ELEMID node, edgeend *data,
       }}
       azdif = az - data->myaz;
       LWDEBUGF(1, "azimuth of edge %" LWTFMT_ELEMID
-                  ": %g (diff: %g)", edge->edge_id, az, azdif);
+                  ": %.15g (diff: %.15g)", edge->edge_id, az, azdif);
 
       if ( azdif < 0 ) azdif += 2 * M_PI;
       if ( minaz == -1 ) {
@@ -1636,7 +1669,7 @@ _lwt_FindAdjacentEdges( LWT_TOPOLOGY* topo, LWT_ELEMID node, edgeend *data,
         return -1;
       }
       LWDEBUGF(1, "edge %" LWTFMT_ELEMID " ends on node %" LWTFMT_ELEMID
-                  ", edgeend is %g,%g-%g,%g",
+                  ", edgeend is [%.15g %.15g,%.15g %.15g]",
                   edge->edge_id, node, p1.x, p1.y, p2.x, p2.y);
       if ( ! azimuth_pt_pt(&p1, &p2, &az) ) {{
         LWT_ELEMID id = edge->edge_id;
@@ -1648,7 +1681,7 @@ _lwt_FindAdjacentEdges( LWT_TOPOLOGY* topo, LWT_ELEMID node, edgeend *data,
       }}
       azdif = az - data->myaz;
       LWDEBUGF(1, "azimuth of edge %" LWTFMT_ELEMID
-                  ": %g (diff: %g)", edge->edge_id, az, azdif);
+                  ": %.15g (diff: %.15g)", edge->edge_id, az, azdif);
       if ( azdif < 0 ) azdif += 2 * M_PI;
       if ( minaz == -1 ) {
         minaz = maxaz = azdif;
@@ -1732,8 +1765,8 @@ _lwt_GetInteriorEdgePoint(const LWLINE* edge, POINT2D* ip)
   for (i=1; i<pa->npoints-1; ++i)
   {
     getPoint2d_p(pa, i, &tp); /* pick next point */
-    if ( p2d_same(&tp, &fp) ) continue; /* equal to startpoint */
-    if ( p2d_same(&tp, &lp) ) continue; /* equal to endpoint */
+    if ( P2D_SAME_STRICT(&tp, &fp) ) continue; /* equal to startpoint */
+    if ( P2D_SAME_STRICT(&tp, &lp) ) continue; /* equal to endpoint */
     /* this is a good one, neither same of start nor of end point */
     *ip = tp;
     return 1; /* found */
@@ -1743,7 +1776,7 @@ _lwt_GetInteriorEdgePoint(const LWLINE* edge, POINT2D* ip)
 
   /* interpolate if start point != end point */
 
-  if ( p2d_same(&fp, &lp) ) return 0; /* no distinct points in edge */
+  if ( P2D_SAME_STRICT(&fp, &lp) ) return 0; /* no distinct points in edge */
 
   ip->x = fp.x + ( (lp.x - fp.x) * 0.5 );
   ip->y = fp.y + ( (lp.y - fp.y) * 0.5 );
@@ -1902,7 +1935,12 @@ _lwt_AddFaceSplit( LWT_TOPOLOGY* topo,
   LWDEBUGF(1, "Edge %" LWTFMT_ELEMID " split face %" LWTFMT_ELEMID " (mbr_only:%d)",
            sedge, face, mbr_only);
 
-  /* Construct a polygon using edges of the ring */
+  /*
+   * Construct a polygon using edges of the ring
+   *
+   * NOTE: this possibily includes dangling edges
+   *
+   */
   LWPOLY *shell = _lwt_MakeRingShell(topo, signed_edge_ids,
                                      num_signed_edge_ids);
   if ( ! shell ) {
@@ -2049,7 +2087,7 @@ _lwt_AddFaceSplit( LWT_TOPOLOGY* topo,
 	  lwerror("Backend error: %s", lwt_be_lastErrorMessage(topo->be_iface));
 	  return -2;
   }
-  LWDEBUGF(1, "_lwt_AddFaceSplit: lwt_be_getEdgeByFace returned %d edges", numfaceedges);
+  LWDEBUGF(1, "_lwt_AddFaceSplit: lwt_be_getEdgeByFace(%d) returned %d edges", face, numfaceedges);
 
   if ( numfaceedges )
   {
@@ -2066,70 +2104,68 @@ _lwt_AddFaceSplit( LWT_TOPOLOGY* topo,
       int contains;
       POINT2D ep;
 
-      /* (2.1) skip edges whose ID is in the list of boundary edges ? */
+      /* (2.1) skip edges whose ID is in the list of boundary edges */
       for ( j=0; j<num_signed_edge_ids; ++j )
       {
-        int seid = signed_edge_ids[j];
+        int seid = signed_edge_ids[j]; /* signed ring edge id */
         if ( seid == e->edge_id )
         {
-          /* IDEA: remove entry from signed_edge_ids ? */
-          LWDEBUGF(1, "Edge %d is a forward edge of the new ring", e->edge_id);
+          /* IDEA: remove entry from signed_edge_ids, to speed next loop ? */
+          LWDEBUGF(1, "Edge %d is a known forward edge of the new ring", e->edge_id);
           forward_edges[forward_edges_count].edge_id = e->edge_id;
           forward_edges[forward_edges_count++].face_left = newface.face_id;
           found++;
-          if ( found == 2 ) break;
+          if ( found == 2 ) break; /* both edge sides are found on the ring */
         }
         else if ( -seid == e->edge_id )
         {
-          /* IDEA: remove entry from signed_edge_ids ? */
-          LWDEBUGF(1, "Edge %d is a backward edge of the new ring", e->edge_id);
+          /* IDEA: remove entry from signed_edge_ids, to speed next loop ? */
+          LWDEBUGF(1, "Edge %d is a known backward edge of the new ring", e->edge_id);
           backward_edges[backward_edges_count].edge_id = e->edge_id;
           backward_edges[backward_edges_count++].face_right = newface.face_id;
           found++;
-          if ( found == 2 ) break;
+          if ( found == 2 ) break; /* both edge sides are found on the ring */
         }
       }
       if ( found ) continue;
+      LWDEBUGF(1, "Edge %d is not a known edge of the new ring", e->edge_id);
 
-      /* We need to check only a single point
-       * (to avoid collapsed elements of the shell polygon
-       * giving false positive).
-       * The point but must not be an endpoint.
-       */
-      if ( ! _lwt_GetInteriorEdgePoint(e->geom, &ep) )
+      /* Check if the edge is now binding a different face */
+
+      if ( ! getPoint2d_p(e->geom->points, 0, &ep) )
       {
         lwfree(signed_edge_ids);
         lwpoly_free(shell);
         lwfree(forward_edges); /* contents owned by edges */
         lwfree(backward_edges); /* contents owned by edges */
         _lwt_release_edges(edges, numfaceedges);
-        lwerror("Could not find interior point for edge %d: %s",
-                e->edge_id, lwgeom_geos_errmsg);
+        lwerror("Edge %d is empty", e->edge_id);
         return -2;
       }
 
       /* IDEA: check that bounding box shortcut is taken, or use
        *       shellbox to do it here */
-      contains = ptarray_contains_point(pa, &ep) == LW_INSIDE;
-      if ( contains == 2 )
-      LWDEBUGF(1, "Edge %d %scontained in new ring", e->edge_id,
-                  (contains?"":"not "));
+      contains = ptarray_contains_point(pa, &ep);
 
-      /* (2.2) skip edges (NOT, if newface_outside) contained in shell */
+      LWDEBUGF(1, "Edge %d first point %s new ring",
+          e->edge_id, (contains == LW_INSIDE ? "inside" :
+           contains == LW_OUTSIDE ? "outside" : "on boundary of"));
+
+      /* (2.2) skip edges (NOT, if newface_outside) contained in ring */
       if ( newface_outside )
       {
-        if ( contains )
+        if ( contains != LW_OUTSIDE )
         {
-          LWDEBUGF(1, "Edge %d contained in an hole of the new face",
+          LWDEBUGF(1, "Edge %d not outside of the new ring, not updating it",
                       e->edge_id);
           continue;
         }
       }
       else
       {
-        if ( ! contains )
+        if ( contains != LW_INSIDE )
         {
-          LWDEBUGF(1, "Edge %d not contained in the face shell",
+          LWDEBUGF(1, "Edge %d not inside the new ring, not updating it",
                       e->edge_id);
           continue;
         }
@@ -2418,7 +2454,7 @@ _lwt_AddEdge( LWT_TOPOLOGY* topo,
     {
       pa = start_node_geom->point;
       getPoint2d_p(pa, 0, &pn);
-      if ( ! p2d_same(&pn, &p1) )
+      if ( ! P2D_SAME_STRICT(&pn, &p1) )
       {
         if ( num_nodes ) _lwt_release_nodes(endpoints, num_nodes);
         lwerror("SQL/MM Spatial exception"
@@ -2439,7 +2475,7 @@ _lwt_AddEdge( LWT_TOPOLOGY* topo,
     {
       pa = end_node_geom->point;
       getPoint2d_p(pa, 0, &pn);
-      if ( ! p2d_same(&pn, &p2) )
+      if ( ! P2D_SAME_STRICT(&pn, &p2) )
       {
         if ( num_nodes ) _lwt_release_nodes(endpoints, num_nodes);
         lwerror("SQL/MM Spatial exception"
@@ -2956,9 +2992,9 @@ _lwt_FindNextRingEdge(const POINTARRAY *ring, int from,
     LWDEBUGF(1, "Edge %" LWTFMT_ELEMID " 'first' point is %g,%g",
                 isoe->edge_id, p2.x, p2.y);
     LWDEBUGF(1, "Rings's 'from' point is still %g,%g", p1.x, p1.y);
-    if ( p2d_same(&p1, &p2) )
+    if ( P2D_SAME_STRICT(&p1, &p2) )
     {
-      LWDEBUG(1, "p2d_same(p1,p2) returned true");
+      LWDEBUG(1, "P2D_SAME_STRICT(p1,p2) returned true");
       LWDEBUGF(1, "First point of edge %" LWTFMT_ELEMID
                   " matches ring vertex %d", isoe->edge_id, from);
       /* first point matches, let's check next non-equal one */
@@ -2968,12 +3004,12 @@ _lwt_FindNextRingEdge(const POINTARRAY *ring, int from,
         LWDEBUGF(1, "Edge %" LWTFMT_ELEMID " 'next' point %d is %g,%g",
                     isoe->edge_id, j, p2.x, p2.y);
         /* we won't check duplicated edge points */
-        if ( p2d_same(&p1, &p2) ) continue;
+        if ( P2D_SAME_STRICT(&p1, &p2) ) continue;
         /* we assume there are no duplicated points in ring */
         getPoint2d_p(ring, from+1, &pt);
         LWDEBUGF(1, "Ring's point %d is %g,%g",
                     from+1, pt.x, pt.y);
-        match = p2d_same(&pt, &p2);
+        match = P2D_SAME_STRICT(&pt, &p2);
         break; /* we want to check a single non-equal next vertex */
       }
 #if POSTGIS_DEBUG_LEVEL > 0
@@ -2994,7 +3030,7 @@ _lwt_FindNextRingEdge(const POINTARRAY *ring, int from,
       getPoint2d_p(epa, epa->npoints-1, &p2);
       LWDEBUGF(1, "Edge %" LWTFMT_ELEMID " 'last' point is %g,%g",
                   isoe->edge_id, p2.x, p2.y);
-      if ( p2d_same(&p1, &p2) )
+      if ( P2D_SAME_STRICT(&p1, &p2) )
       {
         LWDEBUGF(1, "Last point of edge %" LWTFMT_ELEMID
                     " matches ring vertex %d", isoe->edge_id, from);
@@ -3005,12 +3041,12 @@ _lwt_FindNextRingEdge(const POINTARRAY *ring, int from,
           LWDEBUGF(1, "Edge %" LWTFMT_ELEMID " 'prev' point %d is %g,%g",
                       isoe->edge_id, epa->npoints - j, p2.x, p2.y);
           /* we won't check duplicated edge points */
-          if ( p2d_same(&p1, &p2) ) continue;
+          if ( P2D_SAME_STRICT(&p1, &p2) ) continue;
           /* we assume there are no duplicated points in ring */
           getPoint2d_p(ring, from+1, &pt);
           LWDEBUGF(1, "Ring's point %d is %g,%g",
                       from+1, pt.x, pt.y);
-          match = p2d_same(&pt, &p2);
+          match = P2D_SAME_STRICT(&pt, &p2);
           break; /* we want to check a single non-equal next vertex */
         }
       }
@@ -3232,6 +3268,7 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
   POINT2D p1, p2, pt;
   uint64_t i;
   int isclosed = 0;
+  int leftRingIsCCW = -1;
 
   /* curve must be simple */
   if ( ! lwgeom_is_simple(lwline_as_lwgeom(geom)) )
@@ -3275,7 +3312,7 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
    */
   getPoint2d_p(oldedge->geom->points, 0, &p1);
   getPoint2d_p(geom->points, 0, &pt);
-  if ( ! p2d_same(&p1, &pt) )
+  if ( ! P2D_SAME_STRICT(&p1, &pt) )
   {
     _lwt_release_edges(oldedge, 1);
     lwerror("SQL/MM Spatial exception - "
@@ -3301,7 +3338,7 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
     return -1;
   }
   getPoint2d_p(geom->points, geom->points->npoints-1, &pt);
-  if ( ! p2d_same(&pt, &p2) )
+  if ( ! P2D_SAME_STRICT(&pt, &p2) )
   {
     _lwt_release_edges(oldedge, 1);
     lwerror("SQL/MM Spatial exception - "
@@ -3417,6 +3454,61 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
               span_pre.nextCW, span_pre.nextCCW,
               epan_pre.nextCW, epan_pre.nextCCW);
 
+  /* If the same edge is both on CW and CCW direction on both start
+   * and end points we need to verify winding of the left and right
+   * rings to verify we didn't twist.
+   * See https://trac.osgeo.org/postgis/ticket/5787
+   *
+   * NOTE: this could probably replace the "isclosed" test.
+   *
+   * NOTE: if either start or end node had different CW and CCW
+   *       edges a twist would be cought in the previous check.
+   */
+  if ( ! isclosed &&
+       oldedge->face_left != oldedge->face_right &&
+       span_pre.nextCW == span_pre.nextCCW &&
+       epan_pre.nextCW == epan_pre.nextCCW )
+  {{
+    uint64_t num_signed_edge_ids;
+    LWT_ELEMID *signed_edge_ids;
+    LWPOLY *shell;
+
+    LWDEBUG(1, "Twist check before");
+    signed_edge_ids = lwt_be_getRingEdges(topo, edge_id, &num_signed_edge_ids, 0);
+    /* Get winding of left face ring */
+    if (!signed_edge_ids)
+    {
+      lwerror("Backend error: %s", lwt_be_lastErrorMessage(topo->be_iface));
+      return -1;
+    }
+    LWDEBUGF(1, "getRingEdges returned %d edges", num_signed_edge_ids);
+
+    shell = _lwt_MakeRingShell(topo, signed_edge_ids, num_signed_edge_ids);
+    if ( ! shell ) {
+      lwfree( signed_edge_ids );
+      /* ring_edges should be NULL */
+      lwerror("Could not create ring shell: %s", lwt_be_lastErrorMessage(topo->be_iface));
+      return -1;
+    }
+
+    const POINTARRAY *pa = shell->rings[0];
+    if ( ! ptarray_is_closed_2d(pa) )
+    {
+      lwpoly_free(shell);
+      lwfree( signed_edge_ids );
+      lwerror("Corrupted topology: ring of edge %" LWTFMT_ELEMID
+              " is geometrically not-closed", edge_id);
+      return -1;
+    }
+
+    leftRingIsCCW = ptarray_isccw(pa);
+    lwpoly_free(shell);
+    lwfree( signed_edge_ids );
+
+    LWDEBUGF(1, "Ring of edge %" LWTFMT_ELEMID " is %sclockwise", edge_id, leftRingIsCCW ? "counter" : "");
+  }}
+
+
   /* update edge geometry */
   newedge.edge_id = edge_id;
   newedge.geom = geom;
@@ -3476,6 +3568,55 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
     return -1;
   }}
 
+  /* Check winding of left face ring did not change */
+  if ( leftRingIsCCW != -1 )
+  {{
+    uint64_t num_signed_edge_ids;
+    LWT_ELEMID *signed_edge_ids;
+    LWPOLY *shell;
+    int isCCW;
+
+    LWDEBUG(1, "Twist check after");
+    signed_edge_ids = lwt_be_getRingEdges(topo, edge_id, &num_signed_edge_ids, 0);
+    /* Get winding of left face ring */
+    if (!signed_edge_ids)
+    {
+      //PGTOPO_BE_ERRORF("no ring edges for edge %" LWTFMT_ELEMID, sedge);
+      lwerror("Backend error: %s", lwt_be_lastErrorMessage(topo->be_iface));
+      return -1;
+    }
+    LWDEBUGF(1, "getRingEdges returned %d edges", num_signed_edge_ids);
+
+    shell = _lwt_MakeRingShell(topo, signed_edge_ids, num_signed_edge_ids);
+    if ( ! shell ) {
+      lwfree( signed_edge_ids );
+      /* ring_edges should be NULL */
+      lwerror("Could not create ring shell: %s", lwt_be_lastErrorMessage(topo->be_iface));
+      return -1;
+    }
+
+    const POINTARRAY *pa = shell->rings[0];
+    if ( ! ptarray_is_closed_2d(pa) )
+    {
+      lwpoly_free(shell);
+      lwfree( signed_edge_ids );
+      lwerror("Corrupted topology: ring of edge %" LWTFMT_ELEMID
+              " is geometrically not-closed", edge_id);
+      return -1;
+    }
+
+    isCCW = ptarray_isccw(pa);
+    lwpoly_free(shell);
+    lwfree( signed_edge_ids );
+
+    if ( isCCW != leftRingIsCCW )
+    {
+      _lwt_release_edges(oldedge, 1);
+      lwerror("Edge ring changes winding");
+      return -1;
+    }
+  }}
+
   /*
   -- Update faces MBR of left and right faces
   -- TODO: think about ways to optimize this part, like see if
@@ -3484,8 +3625,12 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
   --       would be larger than the old face MBR...
   --
   */
-  const GBOX* oldbox = lwgeom_get_bbox(lwline_as_lwgeom(oldedge->geom));
-  const GBOX* newbox = lwgeom_get_bbox(lwline_as_lwgeom(geom));
+  LWGEOM *oldgeom = lwline_as_lwgeom(oldedge->geom);
+  LWGEOM *newgeom = lwline_as_lwgeom(geom);
+  lwgeom_refresh_bbox(oldgeom); /* Ensure we use a fit mbr, see #5709 -- TODO: fix this at lower level */
+  lwgeom_refresh_bbox(newgeom); /* Ensure we use a fit mbr, see #5709 -- TODO: fix this at lower level */
+  const GBOX* oldbox = lwgeom_get_bbox(oldgeom);
+  const GBOX* newbox = lwgeom_get_bbox(newgeom);
   if ( ! gbox_same(oldbox, newbox) )
   {
     GBOX* updatedBox;
@@ -4049,7 +4194,7 @@ _lwt_RemEdge( LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, int modFace )
       if ( ! box1 ) {
         i = edge->face_left;
         _lwt_release_edges(edge, 1);
-        _lwt_release_faces(faces, nfaces);
+        if ( nfaces ) _lwt_release_faces(faces, nfaces);
         lwerror("corrupted topology: no face have face_id=%"
                 LWTFMT_ELEMID " (left face for edge %"
                 LWTFMT_ELEMID ")", i, edge_id);
@@ -4058,7 +4203,7 @@ _lwt_RemEdge( LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, int modFace )
       if ( ! box2 ) {
         i = edge->face_right;
         _lwt_release_edges(edge, 1);
-        _lwt_release_faces(faces, nfaces);
+        if ( nfaces ) _lwt_release_faces(faces, nfaces);
         lwerror("corrupted topology: no face have face_id=%"
                 LWTFMT_ELEMID " (right face for edge %"
                 LWTFMT_ELEMID ")", i, edge_id);
@@ -5722,7 +5867,7 @@ _lwt_AddLine(LWT_TOPOLOGY* topo, LWLINE* line, double tol, int* nedges,
         continue;
       }
       nearby[nearbyindex++] = g;
-      ++nn;
+      nn = nn + 1;
     }
     LWDEBUGF(1, "Found %d isolated nodes closer than tolerance (%g)", nn, tol);
   }}

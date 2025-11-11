@@ -53,10 +53,7 @@
  */
 #define HANDLE_GEOS_ERROR(label) \
 	{ \
-		if (strstr(lwgeom_geos_errmsg, "InterruptedException")) \
-			ereport(ERROR, \
-				(errcode(ERRCODE_QUERY_CANCELED), errmsg("canceling statement due to user request"))); \
-		else \
+		if (!strstr(lwgeom_geos_errmsg, "InterruptedException")) \
 			lwpgerror("%s: %s", (label), lwgeom_geos_errmsg); \
 		PG_RETURN_NULL(); \
 	}
@@ -143,7 +140,6 @@ static int
 pip_short_circuit(RTREE_POLY_CACHE *poly_cache, LWPOINT *point, const GSERIALIZED *gpoly)
 {
 	int result;
-
 	if ( poly_cache && poly_cache->ringIndices )
 	{
         result = point_in_multipolygon_rtree(poly_cache->ringIndices, poly_cache->polyCount, poly_cache->ringCounts, point);
@@ -387,6 +383,14 @@ Datum ST_MaximumInscribedCircle(PG_FUNCTION_ARGS)
 		double width, height, size, tolerance;
 		GBOX gbox;
 		int gtype;
+		LWGEOM *lwg;
+		lwg = lwgeom_from_gserialized(geom);
+		if (!lwgeom_isfinite(lwg))
+		{
+			lwpgerror("Geometry contains invalid coordinates");
+			PG_RETURN_NULL();
+		}
+		lwgeom_free(lwg);
 
 		if (!gserialized_get_gbox_p(geom, &gbox))
 			PG_RETURN_NULL();
@@ -511,6 +515,9 @@ Datum pgis_union_geometry_array(PG_FUNCTION_ARGS)
 	if ( count == 0 )
 		PG_RETURN_NULL();
 
+	/* Ok, we really need GEOS now ;) */
+	initGEOS(lwpgnotice, lwgeom_geos_error);
+
 	/* One geom, good geom? Return it */
 	if ( count == 1 && nelems == 1 )
 	{
@@ -518,14 +525,19 @@ Datum pgis_union_geometry_array(PG_FUNCTION_ARGS)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #endif
-		PG_RETURN_POINTER((GSERIALIZED *)(ARR_DATA_PTR(array)));
+		g = POSTGIS2GEOS((GSERIALIZED *)(ARR_DATA_PTR(array)));
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 #pragma GCC diagnostic pop
 #endif
+		srid = GEOSGetSRID(g);
+		g_union = GEOSUnaryUnion(g);
+		GEOSGeom_destroy(g);
+		if (!g_union) HANDLE_GEOS_ERROR("GEOSUnaryUnion");
+		GEOSSetSRID(g_union, srid);
+		gser_out = GEOS2POSTGIS(g_union, is3d);
+		GEOSGeom_destroy(g_union);
+		PG_RETURN_POINTER(gser_out);
 	}
-
-	/* Ok, we really need GEOS now ;) */
-	initGEOS(lwpgnotice, lwgeom_geos_error);
 
 	/*
 	** Collect the non-empty inputs and stuff them into a GEOS collection
@@ -867,23 +879,32 @@ Datum ST_SimplifyPolygonHull(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(topologypreservesimplify);
 Datum topologypreservesimplify(PG_FUNCTION_ARGS)
 {
-	GSERIALIZED	*geom1;
+	GSERIALIZED	*gs1;
+	LWGEOM *lwg1;
 	double	tolerance;
 	GEOSGeometry *g1, *g3;
 	GSERIALIZED *result;
 	uint32_t type;
 
-	geom1 = PG_GETARG_GSERIALIZED_P(0);
+	gs1 = PG_GETARG_GSERIALIZED_P(0);
 	tolerance = PG_GETARG_FLOAT8(1);
+	lwg1 = lwgeom_from_gserialized(gs1);
 
 	/* Empty.Simplify() == Empty */
-	type = gserialized_get_type(geom1);
-	if ( gserialized_is_empty(geom1) || type == TINTYPE || type == TRIANGLETYPE )
-		PG_RETURN_POINTER(geom1);
+	type = lwgeom_get_type(lwg1);
+	if (lwgeom_is_empty(lwg1) || type == TINTYPE || type == TRIANGLETYPE)
+		PG_RETURN_POINTER(gs1);
+
+	if (!lwgeom_isfinite(lwg1))
+	{
+		lwpgerror("Geometry contains invalid coordinates");
+		PG_RETURN_NULL();
+	}
 
 	initGEOS(lwpgnotice, lwgeom_geos_error);
 
-	g1 = POSTGIS2GEOS(geom1);
+	g1 = LWGEOM2GEOS(lwg1, LW_TRUE);
+	lwgeom_free(lwg1);
 	if (!g1)
 		HANDLE_GEOS_ERROR("First argument geometry could not be converted to GEOS");
 
@@ -894,9 +915,9 @@ Datum topologypreservesimplify(PG_FUNCTION_ARGS)
 
 	POSTGIS_DEBUGF(3, "result: %s", GEOSGeomToWKT(g3));
 
-	GEOSSetSRID(g3, gserialized_get_srid(geom1));
+	GEOSSetSRID(g3, gserialized_get_srid(gs1));
 
-	result = GEOS2POSTGIS(g3, gserialized_has_z(geom1));
+	result = GEOS2POSTGIS(g3, gserialized_has_z(gs1));
 	GEOSGeom_destroy(g3);
 
 	if (!result)
@@ -905,7 +926,7 @@ Datum topologypreservesimplify(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL(); /* never get here */
 	}
 
-	PG_FREE_IF_COPY(geom1, 0);
+	PG_FREE_IF_COPY(gs1, 0);
 	PG_RETURN_POINTER(result);
 }
 
@@ -958,6 +979,15 @@ Datum buffer(PG_FUNCTION_ARGS)
 		        0, 0)); // buffer wouldn't give back z or m anyway
 		PG_RETURN_POINTER(geometry_serialize(lwg));
 	}
+
+	lwg = lwgeom_from_gserialized(geom1);
+
+	if (!lwgeom_isfinite(lwg))
+	{
+		lwpgerror("Geometry contains invalid coordinates");
+		PG_RETURN_NULL();
+	}
+	lwgeom_free(lwg);
 
 	initGEOS(lwpgnotice, lwgeom_geos_error);
 
@@ -1766,18 +1796,20 @@ Datum contains(PG_FUNCTION_ARGS)
 		else if (gserialized_get_type(gpoint) == MULTIPOINTTYPE)
 		{
 			LWMPOINT* mpoint = lwgeom_as_lwmpoint(lwgeom_from_gserialized(gpoint));
-			uint32_t i;
 			int found_completely_inside = LW_FALSE;
 
 			retval = LW_TRUE;
-			for (i = 0; i < mpoint->ngeoms; i++)
+			for (uint32_t i = 0; i < mpoint->ngeoms; i++)
 			{
+				int pip_result;
+				LWPOINT* pt = mpoint->geoms[i];
 				/* We need to find at least one point that's completely inside the
 				 * polygons (pip_result == 1).  As long as we have one point that's
 				 * completely inside, we can have as many as we want on the boundary
 				 * itself. (pip_result == 0)
 				 */
-				int pip_result = pip_short_circuit(cache, mpoint->geoms[i], gpoly);
+				if (lwpoint_is_empty(pt)) continue;
+				pip_result = pip_short_circuit(cache, pt, gpoly);
 				if (pip_result == 1)
 					found_completely_inside = LW_TRUE;
 
@@ -1976,8 +2008,9 @@ Datum covers(PG_FUNCTION_ARGS)
 			retval = LW_TRUE;
 			for (i = 0; i < mpoint->ngeoms; i++)
 			{
-				int pip_result = pip_short_circuit(cache, mpoint->geoms[i], gpoly);
-				if (pip_result == -1)
+				LWPOINT *pt = mpoint->geoms[i];
+				if (lwpoint_is_empty(pt)) continue;
+				if (pip_short_circuit(cache, pt, gpoly) == -1)
 				{
 					retval = LW_FALSE;
 					break;
@@ -2108,8 +2141,9 @@ Datum coveredby(PG_FUNCTION_ARGS)
 			retval = LW_TRUE;
 			for (i = 0; i < mpoint->ngeoms; i++)
 			{
-				int pip_result = pip_short_circuit(cache, mpoint->geoms[i], gpoly);
-				if (pip_result == -1)
+				LWPOINT *pt = mpoint->geoms[i];
+				if (lwpoint_is_empty(pt)) continue;
+				if (pip_short_circuit(cache, pt, gpoly) == -1)
 				{
 					retval = LW_FALSE;
 					break;
@@ -2266,13 +2300,12 @@ Datum ST_Intersects(PG_FUNCTION_ARGS)
 		else if (gserialized_get_type(gpoint) == MULTIPOINTTYPE)
 		{
 			LWMPOINT* mpoint = lwgeom_as_lwmpoint(lwgeom_from_gserialized(gpoint));
-			uint32_t i;
-
 			retval = LW_FALSE;
-			for (i = 0; i < mpoint->ngeoms; i++)
+			for (uint32_t i = 0; i < mpoint->ngeoms; i++)
 			{
-				int pip_result = pip_short_circuit(cache, mpoint->geoms[i], gpoly);
-				if (pip_result != -1) /* not outside */
+				LWPOINT *pt = mpoint->geoms[i];
+				if (lwpoint_is_empty(pt)) continue;
+				if (pip_short_circuit(cache, pt, gpoly) != -1) /* not outside */
 				{
 					retval = LW_TRUE;
 					break;
@@ -2477,8 +2510,7 @@ Datum relate_pattern(PG_FUNCTION_ARGS)
 		HANDLE_GEOS_ERROR("Second argument geometry could not be converted to GEOS");
 	}
 
-	patt =  DatumGetCString(DirectFunctionCall1(textout,
-	                        PointerGetDatum(PG_GETARG_DATUM(2))));
+	patt =  DatumGetCString(DirectFunctionCall1(textout, PG_GETARG_DATUM(2)));
 
 	/*
 	** Need to make sure 't' and 'f' are upper-case before handing to GEOS
@@ -3256,6 +3288,19 @@ Datum ST_Split(PG_FUNCTION_ARGS)
 
 	lwgeom_in = lwgeom_from_gserialized(in);
 	lwblade_in = lwgeom_from_gserialized(blade_in);
+
+	if (!lwgeom_isfinite(lwgeom_in))
+	{
+		lwpgerror("Input Geometry contains invalid coordinates");
+		PG_RETURN_NULL();
+	}
+
+	if (!lwgeom_isfinite(lwblade_in))
+	{
+		lwpgerror("Blade Geometry contains invalid coordinates");
+		PG_RETURN_NULL();
+	}
+
 
 	lwgeom_out = lwgeom_split(lwgeom_in, lwblade_in);
 	lwgeom_free(lwgeom_in);

@@ -936,6 +936,9 @@ int point_in_multipolygon_rtree(RTREE_NODE **root, int polyCount, int *ringCount
 
 	POSTGIS_DEBUGF(2, "point_in_multipolygon_rtree called for %p %d %p.", root, polyCount, point);
 
+	/* empty is not within anything */
+	if (lwpoint_is_empty(point)) return -1;
+
 	getPoint2d_p(point->point, 0, &pt);
 	/* assume bbox short-circuit has already been attempted */
 
@@ -944,6 +947,9 @@ int point_in_multipolygon_rtree(RTREE_NODE **root, int polyCount, int *ringCount
 	/* is the point inside any of the sub-polygons? */
 	for ( p = 0; p < polyCount; p++ )
 	{
+		/* Skip empty polygons */
+		if( ringCounts[p] == 0 ) continue;
+
 		in_ring = point_in_ring_rtree(root[i], &pt);
 		POSTGIS_DEBUGF(4, "point_in_multipolygon_rtree: exterior ring (%d), point_in_ring returned %d", p, in_ring);
 		if ( in_ring == -1 ) /* outside the exterior ring */
@@ -1044,6 +1050,9 @@ int point_in_multipolygon(LWMPOLY *mpolygon, LWPOINT *point)
 	POINT2D pt;
 
 	POSTGIS_DEBUG(2, "point_in_polygon called.");
+
+	/* empty is not within anything */
+	if (lwpoint_is_empty(point)) return -1;
 
 	getPoint2d_p(point->point, 0, &pt);
 	/* assume bbox short-circuit has already been attempted */

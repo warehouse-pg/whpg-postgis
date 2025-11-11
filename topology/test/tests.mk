@@ -46,6 +46,7 @@ TESTS += \
 	$(top_srcdir)/topology/test/regress/legacy_query.sql \
 	$(top_srcdir)/topology/test/regress/legacy_validate.sql \
 	$(top_srcdir)/topology/test/regress/polygonize.sql \
+	$(top_srcdir)/topology/test/regress/populate_topology_layer.sql \
 	$(top_srcdir)/topology/test/regress/removeunusedprimitives.sql \
 	$(top_srcdir)/topology/test/regress/sqlmm.sql \
 	$(top_srcdir)/topology/test/regress/st_addedgemodface.sql \
@@ -79,4 +80,5 @@ TESTS += \
 	$(top_srcdir)/topology/test/regress/topojson.sql \
 	$(top_srcdir)/topology/test/regress/topologysummary.sql \
 	$(top_srcdir)/topology/test/regress/totopogeom.sql \
-	$(top_srcdir)/topology/test/regress/validatetopology.sql
+	$(top_srcdir)/topology/test/regress/validatetopology.sql \
+	$(top_srcdir)/topology/test/regress/validatetopologyrelation.sql

@@ -1,8 +1,8 @@
 PostGIS - Geographic Information Systems Extensions to PostgreSQL
 =================================================================
 
-:Version: 3.3.2
-:Date: 2022-11-12
+:Version: 3.3.7
+:Date: 2024-09-05
 :Website: https://postgis.net
 
 This distribution contains a module which implements GIS simple features, ties
@@ -40,6 +40,10 @@ PostGIS is compatible with PostgreSQL 11 and above.
 
 You *must* have the full PostgreSQL - including server headers - installed for
 this to work.
+
+For apt-based systems you can run this command to install the below dependencies (except for GTK):
+
+  sudo apt-get install libproj-dev libgeos-dev libxml2-dev gettext libjson-c-dev libgdal-dev libsfcgal-dev libprotobuf-c-dev protobuf-c-compiler
 
 * PROJ4 (Required, Version 5.2.0 or higher):
 
@@ -81,10 +85,6 @@ this to work.
 
     http://github.com/json-c/json-c/wiki
 
-  You can get it installed in apt-based systems using:
-
-    apt-get install libjson0-dev
-
 * GDAL (Optional, Version 2 or higher 3+ is strongly recommended)
 
   GDAL (https://gdal.org) is *required* if you want to compile PostGIS
@@ -95,7 +95,7 @@ this to work.
 * SFCGAL 1.4.1+ is requires for additional functionality ST_AlphaShape, ST_OptimalAlphaShape,
   and ST_3DConvexhull
 
-  https://gitlab.com/Oslandia/SFCGAL
+  https://gitlab.com/sfcgal/SFCGAL
 
 * protobuf-c (Optional, Version 1.1.0 or higher)
 
@@ -104,10 +104,6 @@ this to work.
   minimum version of protobuf-c.
 
     https://github.com/protobuf-c/protobuf-c
-
-  To get packages on apt-based systems:
-
-    apt-get install libprotobuf-c-dev protobuf-c-compiler
 
 * GTK (Optional,  Version 2 series: 2.2.0 or higher)
 

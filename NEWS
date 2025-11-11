@@ -1,3 +1,165 @@
+PostGIS 3.3.8
+2024-12-22
+
+PostgreSQL 11-17 required. GEOS 3.6+ required but GEOS 3.11+ to take advantage of all features.
+Proj 4.9+ required.
+
+* Bug Fixes and Enhancements *
+
+ - #5785, [raster] ST_MapAlgebra segfaults when expression references
+          a supernumerary rast argument (Dian M Fay)
+ - #5787, [topology] Check that ST_ChangeEdgeGeom doesn't change winding of rings
+          (Sandro Santilli)
+ - #5795, [topology] Fix ST_NewEdgesSplit can cause invalid topology
+          (Björn Harrtell)
+ - #5677, Retain SRID during unary union (Paul Ramsey)
+
+* Enhancements *
+
+  - #5782, [topology] Improve robustness of min distance calculation (Sandro Santilli)
+
+* Breaking Changes *
+
+  - #5799, make ST_TileEnvelope clips envelopes to tile plane extent (Paul Ramsey)
+
+
+PostGIS 3.3.7
+2024-09-05
+
+This version requires PostgreSQL 11-17, GEOS 3.6 or higher, and Proj 4.9+
+Additional features are enabled if you are running GEOS 3.9+
+(and ST_MakeValid enhancements with 3.10+), Proj 6.1+,
+and PostgreSQL 15+.
+
+* Bug Fixes and Enhancements *
+
+ - #5766, Always report invalid non-null MBR of universal face (Sandro Santilli)
+ - #5709, Fix loose mbr in topology.face on ST_ChangeEdgeGeom (Sandro Santilli)
+ - #5698, Fix robustness issue splitting line by vertex very close to endpoints,
+          affecting topology population functions (Sandro Santilli)
+ - #5649, ST_Value should return NULL on missing band (Paul Ramsey)
+ - #5677, ST_Union(geom[]) should unary union single entry arrays (Paul Ramsey)
+ - #5679, Remove spurious COMMIT statements from sfcgal script
+          (Sandro Santilli, Loïc Bartoletti)
+ - #5680, Fix populate_topology_layer with standard_conforming_strings
+          set to off (Sandro Santilli)
+ - #5589, ST_3DDistance error for shared first point (Paul Ramsey)
+ - #5686, ST_NumInteriorRings and Triangle crash (Paul Ramsey)
+ - #5671, Bug in ST_Area function with use_spheroid=false
+          (Paul Ramsey, Regina Obe)
+ - #5687, #5756 Support for PostgreSQL 17, revise postgis_get_full_version_schema()
+          to not rely on search_path
+ - #5740, ST_DistanceSpheroid(geometry) incorrectly handles polygons (Paul Ramsey)
+ - #5765, Handle nearly co-linear edges with slightly less slop (Paul Ramsey)
+ - #5745, St_AsLatLonText rounding errors (Paul Ramsey)
+
+
+PostGIS 3.3.6
+2024/02/07
+
+This version requires PostgreSQL 11-16, GEOS 3.6 or higher, and Proj 4.9+
+Additional features are enabled if you are running GEOS 3.9+
+(and ST_MakeValid enhancements with 3.10+), Proj 6.1+,
+and PostgreSQL 15+.
+
+* Bug Fixes and Enhancements *
+
+ - #5633, Fix postgis load, upgrade and usage with standard_conforming_strings
+          set to off (Sandro Santilli, Regina Obe)
+ - #5571, Memory over-allocation for narrow inputs (Paul Ramsey)
+ - #5610, Regression fix: Allow Nan and infinity again
+          in ST_SetPoint (Regina Obe)
+ - #5627, #5647, Handling of EMPTY components in PiP check (Paul Ramsey)
+ - #5629, Handling EMPTY components in repeated point removal (Paul Ramsey)
+ - #5604, Handle distance between collections with empty elements (Paul Ramsey)
+ - #5635, Handle NaN points in ST_Split (Regina Obe)
+ - Logic error in ST_Covers(geography) (Paul Ramsey)
+ - #5646, Crash on collections with empty members (Paul Ramsey)
+ - #5580, Handle empty collection components in 3d distance (Paul Ramsey)
+ - #5639, ST_DFullyWithin line/poly error case (Paul Ramsey)
+ - #5662, Change XML parsers to SAX2 (Paul Ramsey)
+
+
+PostGIS 3.3.5
+2023/11/19
+
+* Bug Fixes and Enhancements *
+ - #5598, Fix restore of 3.3 dumps (Sandro Santilli)
+ - #5568, Improve robustness of topology face split handling (Sandro Santilli)
+ - #5548, Fix box-filtered validity check of topologies with edge-less faces
+          (Sandro Santilli)
+ - #5442,#5525 [postgis_tiger_geocoder,postgis_topology]
+          Database search_path does not do
+          what it intends to do (Jelte Fennema, Sandro Santilli, Regina Obe)
+ - #5494, Fix double-upgrade with view using st_dwithin(text, ...)
+          (Sandro Santilli)
+ - Fix JsonB casting issue (Paul Ramsey)
+ - #5616, Fix to find docbook on newer docbook installs (Regina Obe)
+ - #5605, Fix regression failure with GEOS 3.13, main branch (Regina Obe)
+
+
+PostGIS 3.3.4
+2023/07/28
+
+* Bug Fixes and Enhancements *
+  - #5450, Fix macro expansion recursion on powerpc architectures.
+           (Bas Couwenberg)
+  - #5395, [postgis_topology] Allow unprivileged user dump
+           of database with topology enabled
+  - #5394, [postgis_topology] Improve robustness of finding
+           distinct vertices in topology edges (Sandro Santilli)
+  - #5403, [postgis_topology] Fix ValidateTopology(bbox) without
+           topology in search_path (Sandro Santilli)
+  - #5410, [postgis_raster] ST_Value bilinear resample,
+           don't throw an error if Band has no NODATA value
+           (Regina Obe)
+  - #5385, Postgres malloc assertion fail when
+           using pg_cancel_backend with ST_AsMVT
+           (Regina Obe, Paul Ramsey)
+  - #5452, Updated README.postgis for apt-based systems
+           (Jelte Fennema)
+
+* Breaking Changes *
+    - #5385, Take out interruptability of ST_AsMVT
+             as it causes backend crash under intense conditions
+            (Regina Obe, Paul Ramsey)
+
+PostGIS 3.3.3
+2023/05/29
+
+* Bug Fixes and Enhancements *
+  - #5384, Fix crash in ST_AsGML when given id is longer than given prefix
+           (Sandro Santilli)
+  - #5380, Fix 2.5 upgrades with views using geography based ST_Distance
+           (Sandro Santilli)
+  - #5303, Don't try removing closed edges endpoint from
+           RemoveUnusedPrimitives (Sandro Santilli)
+  - #5289, Fix misleading message in RemoveUnusedPrimitives about
+           doubly connected edges healing (Sandro Santilli)
+  - #5298, Fix CopyTopology exception with hierarchical layers (Sandro Santilli)
+  - #5299, Corrections to address_standardizer_data_us lex (Regina Obe)
+  - #5106, Fix segfault in ST_RemEdgeNewFace/ST_RemEdgeModFace
+           when no edge side-faces are found (Sandro Santilli)
+  - #5329, Fix downgrade protection introduced in 3.3.0 (Sandro Santilli)
+  - #5332, Keep proj errors from percolating into PgSQL log (Paul Ramsey)
+  - #5313, Fix memory access issue in ST_InterpolateRaster (Paul Ramsey)
+  - #5338, Dump/Restore of raster table fails on
+           enforce_coverage_tile_rast constraint (Regina Obe)
+  - #5315, #5318, #5319, #5320, #5342 crashes on infinite coordinates
+          (Regina Obe, Paul Ramsey)
+  - #5344, Include topology id sequence state in dumps (Sandro Santilli)
+  - #5288, ST_LineCrossingDirection multi-cross error (Paul Ramsey)
+  - #5347, _ST_BestSRID crashes on ARM with infinite geometries (Regina Obe)
+  - #5331, [postgis_tiger_geocoder] reverse_geocode, prefer addressable ranges
+          (Regina Obe, Locance)
+  - #5363, Make ST_ClusterDBScan interruptable (Paul Ramsey)
+  - #5257, #5261, #5277, #5304, #5308, #5374, Support for PG16
+          (Paul Ramsey, Regina Obe, Sandro , Laurenz Albe)
+  - #5371, ST_Union segfaults (PG 11-12) (Regina Obe)
+  - #5378, ST_Buffer(geography) drops SRID (Paul Ramsey)
+  - #5388, [postgis_tiger_geocoder] Fix faces table tiger_gload,
+           caused census rerelease of faces data (Regina Obe)
+
 PostGIS 3.3.2
 2022/11/12
 This version requires PostgreSQL 11-15, GEOS 3.6 or higher, and Proj 5.2+
@@ -63,7 +225,7 @@ Use below to enable it.
  * Breaking changes *
   - Drop support for PostgreSQL 9.6 and 10 (Regina Obe)
   - Change output for WKT MULTIPOINT. All points now
-    wrapped in parens. (Even Roualt)
+    wrapped in parens. (Even Rouault)
   - GH674, geometry validation and fixing is disabled
     for ST_DumpAsPolygons and ST_Polygon so it works faster
     but might produce invalid polygons. (Aliaksandr Kalenik)
@@ -760,7 +922,7 @@ PostGIS 2.5.2
            (Darafei Praliaskouski, Arthur Lesuisse, Andrew Gierth, Raúl Marín)
   - #4262, Document MULTISURFACE compatibility of ST_LineToCurve (Steven Ottens)
   - #4267, Enable Proj 6 deprecated APIs (Darafei Praliaskouski, Raúl Marín)
-  - #4276, ST_AsGeoJSON documentation refresh (Darafei Praliaskouski)￼
+  - #4276, ST_AsGeoJSON documentation refresh (Darafei Praliaskouski)
   - #4273, Tighter parsing of WKT (Paul Ramsey)
   - #4292, ST_AsMVT: parse JSON numeric values with decimals as doubles (Raúl Marín)
   - #4300, ST_AsMVTGeom: Always return the simplest geometry (Raúl Marín)

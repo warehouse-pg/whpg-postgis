@@ -59,6 +59,21 @@ static ExecutorStart_hook_type onExecutorStartPrev = NULL;
 static void onExecutorStart(QueryDesc *queryDesc, int eflags);
 
 /*
+* Pass proj error message out via the PostgreSQL logging
+* system instead of letting them default into the
+* stderr.
+*/
+#if POSTGIS_PROJ_VERSION > 60
+#include "proj.h"
+
+static void
+pjLogFunction(void* data, int logLevel, const char* message)
+{
+	elog(DEBUG1, "libproj threw an exception (%d): %s", logLevel, message);
+}
+#endif
+
+/*
  * Module load callback
  */
 void _PG_init(void);
@@ -74,6 +89,11 @@ _PG_init(void)
 
   /* install PostgreSQL handlers */
   pg_install_lwgeom_handlers();
+
+  /* pass proj messages through the pgsql error handler */
+#if POSTGIS_PROJ_VERSION > 60
+  proj_log_func(NULL, NULL, pjLogFunction);
+#endif
 
   /* setup hooks */
   onExecutorStartPrev = ExecutorStart_hook;
@@ -108,7 +128,8 @@ handleInterrupt(int sig)
   GEOS_interruptRequest();
 
 #ifdef HAVE_LIBPROTOBUF
-  lwgeom_wagyu_interruptRequest();
+	/* Taking out per #5385 crash */
+  //lwgeom_wagyu_interruptRequest();
 #endif
 
   /* request interruption of liblwgeom as well */
@@ -125,7 +146,8 @@ static void onExecutorStart(QueryDesc *queryDesc, int eflags) {
     GEOS_interruptCancel();
 
 #ifdef HAVE_LIBPROTOBUF
-    lwgeom_wagyu_interruptReset();
+		/* Taking out per #5385 crash */
+    //lwgeom_wagyu_interruptReset();
 #endif
 
     lwgeom_cancel_interrupt();

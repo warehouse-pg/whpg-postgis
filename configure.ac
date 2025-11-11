@@ -53,7 +53,7 @@ dnl SQL Preprocessor
 dnl
 AC_PATH_PROG([CPPBIN], [cpp], [])
 if test "x$CPPBIN" != "x"; then
-  SQLPP="${CPPBIN} -traditional-cpp -w -P"
+  SQLPP="${CPPBIN} -traditional-cpp -w -P -Upixel -Ubool"
 else
   AC_PATH_PROG([GPP], [gpp_], [])
   if test "x$GPP" != "x"; then
@@ -259,6 +259,7 @@ if test "x$XSLBASE" = "x"; then
 	SEARCHPATH="
 		/usr/share/sgml/docbook/xsl-stylesheets
 		/usr/share/xml/docbook/stylesheet/docbook-xsl
+		/usr/share/xml/docbook/stylesheet/docbook-xsl-ns
 		/usr/share/xml/docbook/stylesheet/nwalsh
 		/usr/share/sgml/docbook/stylesheet/xsl/nwalsh
 		/opt/local/share/xsl/docbook-xsl
@@ -760,6 +761,22 @@ CPPFLAGS="$GEOS_CPPFLAGS"
 AC_CHECK_HEADER([geos_c.h], [], [AC_MSG_ERROR([could not find geos_c.h - you may need to specify the directory of a geos-config file using --with-geosconfig])])
 CPPFLAGS="$CPPFLAGS_SAVE"
 
+#
+# MacOS with XCode > 15 now requires rpath entries for
+# libraries like GEOS/Proj that might be flexibly installed
+# with movability expected
+#
+case $host_os in
+    darwin*)
+                GEOS_RPATH=`echo $GEOS_LDFLAGS | $PERL -nle 'print "$1" if /\-L ?(\S+) /'`
+                AC_MSG_RESULT([checking for GEOS_RPATH under MacOS... $GEOS_RPATH])
+                if test "x$GEOS_RPATH" != "x"; then
+                  # Add the rpath setting to the LDFLAGS
+                    GEOS_LDFLAGS="$GEOS_LDFLAGS -Wl,-rpath,$GEOS_RPATH"
+                fi
+                ;;
+esac
+
 dnl Ensure we can link against libgeos_c
 LIBS_SAVE="$LIBS"
 LIBS="$GEOS_LDFLAGS"
@@ -808,7 +825,7 @@ if test "x$with_sfcgal" != "xno"; then
       SFCGAL="sfcgal"
 			HAVE_SFCGAL="yes"
       AC_DEFINE([HAVE_SFCGAL], [1], [Define to 1 if sfcgal is being built])
-	    SFCGAL_MAKEFILE_LIST="sfcgal/Makefile sfcgal/regress/Makefile sfcgal/regress/tests.mk extensions/postgis_sfcgal/Makefile"
+	    SFCGAL_MAKEFILE_LIST="sfcgal/regress/Makefile sfcgal/regress/tests.mk extensions/postgis_sfcgal/Makefile"
 		fi
 		if test ! "$POSTGIS_SFCGAL_VERSION" -ge 10301; then
 			AC_MSG_ERROR([PostGIS requires SFCGAL >= 1.3.1 (found $SFCGAL_VERSION)])
@@ -905,6 +922,21 @@ else
 	PROJ_LDFLAGS="-lproj"
 fi
 
+#
+# MacOS with XCode > 15 now requires rpath entries for
+# libraries like GEOS/Proj that might be flexibly installed
+# with movability expected
+#
+case $host_os in
+    darwin*)
+                PROJ_RPATH=`echo $PROJ_LDFLAGS | $PERL -nle 'print "$1" if /\-L ?(\S+) /'`
+                AC_MSG_RESULT([checking for PROJ_RPATH under MacOS... $PROJ_RPATH])
+                    if test "x$PROJ_RPATH" != "x"; then
+                  # Add the rpath setting to the LDFLAGS
+                    PROJ_LDFLAGS="$PROJ_LDFLAGS -Wl,-rpath,$PROJ_RPATH"
+                fi
+                ;;
+esac
 
 dnl Check that we can find the proj_api.h header file
 CPPFLAGS_SAVE="$CPPFLAGS"
@@ -1325,10 +1357,13 @@ if test "x$with_address_standardizer" != "xno"; then
     AC_SUBST([PCRE_LDFLAGS])
     AC_SUBST([PCRE_LDFLAGS])
     AC_SUBST([PCRE_VERSION])
+    ADDRESS_STANDARDIZER_MAKEFILE_LIST=extensions/address_standardizer/Makefile
+
 
 else
     ADDRESS_STANDARDIZER=""
     AC_MSG_RESULT([ADDRESS_STANDARDIZER support: disabled])
+    ADDRESS_STANDARDIZER_MAKEFILE_LIST=""
 fi
 
 AC_SUBST([ADDRESS_STANDARDIZER])
@@ -1531,6 +1566,7 @@ if test "x$with_raster" != "xno"; then
 	AC_SUBST([RT_POSTGIS_SQL])
 
 	RT_MAKEFILE_LIST="
+		extensions/postgis_raster/Makefile \
 		raster/Makefile \
 		raster/rt_core/Makefile \
 		raster/rt_pg/Makefile \
@@ -1734,10 +1770,9 @@ dnl echo "TRANSLATIONS_MAKEFILE_LIST: ${TRANSLATIONS_MAKEFILE_LIST}"
 AC_CONFIG_FILES([GNUmakefile
    extensions/Makefile
    extensions/postgis/Makefile
-   extensions/postgis_raster/Makefile
    extensions/postgis_topology/Makefile
    extensions/postgis_tiger_geocoder/Makefile
-   extensions/address_standardizer/Makefile
+   $ADDRESS_STANDARDIZER_MAKEFILE_LIST
    liblwgeom/Makefile
    liblwgeom/cunit/Makefile
    liblwgeom/liblwgeom.h
@@ -1745,6 +1780,7 @@ AC_CONFIG_FILES([GNUmakefile
    libpgcommon/cunit/Makefile
    postgis/Makefile
    postgis/sqldefines.h
+   sfcgal/Makefile
    $SFCGAL_MAKEFILE_LIST
    loader/Makefile
    loader/cunit/Makefile
