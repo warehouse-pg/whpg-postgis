@@ -55,8 +55,6 @@ RASTER_TEST_PROPS = \
 	$(top_srcdir)/raster/test/regress/rt_convexhull \
 	$(top_srcdir)/raster/test/regress/rt_envelope
 
-	# FIXME: WHPG7-Merge fix the test
-	#$(top_srcdir)/raster/test/regress/rt_pixelvalue
 RASTER_TEST_BANDPROPS = \
 	$(top_srcdir)/raster/test/regress/rt_setbandpath \
 	$(top_srcdir)/raster/test/regress/rt_band_properties \
@@ -72,13 +70,12 @@ RASTER_TEST_BANDPROPS = \
 	$(top_srcdir)/raster/test/regress/rt_valuecount \
 	$(top_srcdir)/raster/test/regress/rt_valuepercent \
 	$(top_srcdir)/raster/test/regress/rt_bandmetadata \
+	$(top_srcdir)/raster/test/regress/rt_pixelvalue \
 	$(top_srcdir)/raster/test/regress/rt_neighborhood \
 	$(top_srcdir)/raster/test/regress/rt_nearestvalue \
 	$(top_srcdir)/raster/test/regress/rt_pixelofvalue \
 	$(top_srcdir)/raster/test/regress/rt_polygon
 
-	# FIXME: WHPG7-Merge fix the test
-	# $(top_srcdir)/raster/test/regress/rt_gdalwarp
 RASTER_TEST_UTILITY = \
 	$(top_srcdir)/raster/test/regress/rt_utility \
 	$(top_srcdir)/raster/test/regress/rt_fromgdalraster \
@@ -87,14 +84,13 @@ RASTER_TEST_UTILITY = \
 	$(top_srcdir)/raster/test/regress/rt_asjpeg \
 	$(top_srcdir)/raster/test/regress/rt_aspng \
 	$(top_srcdir)/raster/test/regress/rt_reclass \
+	$(top_srcdir)/raster/test/regress/rt_gdalwarp \
 	$(top_srcdir)/raster/test/regress/rt_gdalcontour \
 	$(top_srcdir)/raster/test/regress/rt_asraster \
 	$(top_srcdir)/raster/test/regress/rt_dumpvalues \
 	$(top_srcdir)/raster/test/regress/rt_makeemptycoverage \
 	$(top_srcdir)/raster/test/regress/rt_createoverview
 
-	# FIXME: WHPG7-Merge fix the test
-	#$(top_srcdir)/raster/test/regress/rt_grayscale
 RASTER_TEST_MAPALGEBRA = \
 	$(top_srcdir)/raster/test/regress/rt_mapalgebraexpr \
 	$(top_srcdir)/raster/test/regress/rt_mapalgebrafct \
@@ -112,7 +108,8 @@ RASTER_TEST_MAPALGEBRA = \
 	$(top_srcdir)/raster/test/regress/rt_4ma \
 	$(top_srcdir)/raster/test/regress/rt_setvalues_geomval \
 	$(top_srcdir)/raster/test/regress/rt_elevation_functions \
-	$(top_srcdir)/raster/test/regress/rt_colormap
+	$(top_srcdir)/raster/test/regress/rt_colormap \
+	$(top_srcdir)/raster/test/regress/rt_grayscale
 
 RASTER_TEST_SREL = \
 	$(top_srcdir)/raster/test/regress/rt_gist_relationships \
