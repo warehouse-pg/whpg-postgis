@@ -564,7 +564,6 @@ static int parse_rule(char *buf, int *rule)
     } \
     TRGT = DatumGetInt32(binval);
 
-// FIXME: WHPG7-MERGE. Compare to the upstream postgis, why SPI here?
 #define GET_TEXT_FROM_TUPLE(TRGT,WHICH) \
     TRGT = SPI_getvalue(tuple, tupdesc, WHICH);
 
