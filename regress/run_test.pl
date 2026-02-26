@@ -51,7 +51,8 @@ BEGIN {
 our $DB = $ENV{"POSTGIS_REGRESS_DB"} || "postgis_reg";
 our $REGDIR = $ENV{"POSTGIS_REGRESS_DIR"} || abs_path(dirname($0));
 our $TOP_BUILDDIR = $ENV{"POSTGIS_TOP_BUILD_DIR"} || ${REGDIR} . '/..';
-our $sysdiff = !system("/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
+our $GPHOME = $ENV{"GPHOME"} || die "GPHOME environment variable is not set\n";
+our $sysdiff = !system("$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
 our $DB_OWNER = $ENV{"POSTGIS_REGRESS_DB_OWNER"};
 our $DB_ROLE_EXT_MKR = $ENV{"POSTGIS_REGRESS_ROLE_EXT_CREATOR"} || $DB_OWNER;
 
@@ -2235,7 +2236,7 @@ sub diff
 	if ( $sysdiff ) {
 
 		#$diffstr = `diff --strip-trailing-cr -u $expected_file $obtained_file 2>&1`;
-		$diffstr = `/usr/local/greenplum-db/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
+		$diffstr = `$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
 
 		return $diffstr;
 	}
