@@ -1514,7 +1514,7 @@ compute_gserialized_stats_mode(VacAttrStats *stats, AnalyzeAttrFetchFunc fetchfu
 		notnull_cnt++;
 
 		/* Give backend a chance of interrupting us */
-		vacuum_delay_point();
+		vacuum_delay_point(true);
 	}
 
 	/*
@@ -1732,7 +1732,7 @@ compute_gserialized_stats_mode(VacAttrStats *stats, AnalyzeAttrFetchFunc fetchfu
 		if ( ! nd_box ) continue; /* Skip Null'ed out hard deviants */
 
 		/* Give backend a chance of interrupting us */
-		vacuum_delay_point();
+		vacuum_delay_point(true);
 
 		/* Find the cells that overlap with this box and put them into the ND_IBOX */
 		nd_box_overlap(nd_stats, nd_box, &nd_ibox);

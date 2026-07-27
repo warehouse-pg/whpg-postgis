@@ -34,6 +34,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+/* For htonl() in LWSIZE_SET below; WHPG19's stricter headers no longer
+ * pull this in transitively, leaving htonl() as an implicit declaration. */
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #include "../postgis_config.h"
 
 #if POSTGIS_PROJ_VERSION < 61

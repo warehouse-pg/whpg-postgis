@@ -92,8 +92,19 @@ void pg_install_lwgeom_handlers(void);
 /* Argument handling macros */
 #define PG_GETARG_GSERIALIZED_P(varno) ((GSERIALIZED *)PG_DETOAST_DATUM(PG_GETARG_DATUM(varno)))
 #define PG_GETARG_GSERIALIZED_P_COPY(varno) ((GSERIALIZED *)PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(varno)))
+/* WHPG19: VARATT_IS_EXTENDED/EXTERNAL/COMPRESSED are now typed inline
+ * functions taking `const void *` (varatt.h), not untyped macros, so they
+ * reject an implicit Datum-to-pointer conversion with -Werror=int-conversion.
+ * Callers of this macro are inconsistent about what they hand in (some pass
+ * a raw Datum, e.g. PG_GETARG_GSERIALIZED_HEADER below; others, like
+ * gserialized_gist_2d.c, pre-cast to `(struct varlena *)` first) so we can't
+ * just route through DatumGetPointer() (which itself requires a genuine
+ * Datum argument and would reject an already-a-pointer caller the same way).
+ * A double cast through `(Datum)` then `(const void *)` accepts either. */
 #define PG_GSERIALIZED_DATUM_NEEDS_DETOAST(datum) \
-	(VARATT_IS_EXTENDED((datum)) || VARATT_IS_EXTERNAL((datum)) || VARATT_IS_COMPRESSED((datum)))
+	(VARATT_IS_EXTENDED((const void *)(Datum)(datum)) || \
+	 VARATT_IS_EXTERNAL((const void *)(Datum)(datum)) || \
+	 VARATT_IS_COMPRESSED((const void *)(Datum)(datum)))
 #define PG_GETARG_GSERIALIZED_HEADER(varno) \
 	PG_GSERIALIZED_DATUM_NEEDS_DETOAST(PG_GETARG_DATUM(varno)) \
 	? ((GSERIALIZED *)PG_DETOAST_DATUM_SLICE(PG_GETARG_DATUM(varno), 0, gserialized_max_header_size())) \

@@ -56,11 +56,15 @@ DECLARE
 BEGIN
   EXECUTE 'EXPLAIN ANALYZE ' || qry INTO anl;
 
-  SELECT regexp_matches(anl, ' rows=([0-9]*) .* rows=([0-9]*) ')
+  -- WHPG19: the "actual rows=" figure is now a fractional per-loop average
+  -- (e.g. "rows=101.00") rather than a plain integer, since it is averaged
+  -- across dispatched segment loops - allow an optional decimal part and
+  -- round through numeric rather than casting the text straight to int.
+  SELECT regexp_matches(anl, ' rows=([0-9.]*) .* rows=([0-9.]*) ')
   INTO mat;
 
-  est := mat[1];
-  act := mat[2];
+  est := round(mat[1]::numeric);
+  act := round(mat[2]::numeric);
 
   err = abs(est-act);
 
