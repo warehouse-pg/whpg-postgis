@@ -34,6 +34,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+/* For htonl()/ntohl() in LWSIZE_SET/LWSIZE_GET below (WHPG/GPDB's
+ * forced-network-byte-order varlena header, see the macros' comment). */
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #include "../postgis_config.h"
 
 #include "proj.h"
@@ -315,16 +320,29 @@ typedef struct lwvarlena_t
 * Cribbed from PgSQL, top 30 bits are size. Use VARSIZE() when working
 * internally with PgSQL. See SET_VARSIZE_4B / VARSIZE_4B in
 * PGSRC/src/include/postgres.h for details.
+*
+* WHPG/GPDB: unlike stock PostgreSQL, WHPG always stores the 4-byte
+* varlena length header in network byte order regardless of host
+* endianness (see the "GPDB:" comments next to SET_VARSIZE_4B/VARSIZE_4B
+* in varatt.h) -- confirmed identical back to at least WHPG7/PG12's
+* postgres.h. The stock WORDS_BIGENDIAN-conditional bit-shift form this
+* file otherwise ships with assumes native/host-endian storage, which is
+* wrong for WHPG on a little-endian host: it silently mis-sizes every
+* GSERIALIZED header, corrupting anything that copies the datum by its
+* reported VARSIZE (e.g. the planner's pg_detoast_datum_copy() during
+* constant-folding of a call like ST_Translate('POINT(0 0)', 5, 12) --
+* segfaults in memcpy on a bogus length). Note the definitions of
+* SET_VARSIZE_4B / VARSIZE_4B are different in PgSQL/GPDB, so we have to
+* change the definitions here to align to GPDB.
 */
 #ifdef WORDS_BIGENDIAN
-#define LWSIZE_GET(varsize) ((varsize) & 0x3FFFFFFF)
-#define LWSIZE_SET(varsize, len) ((varsize) = ((len) & 0x3FFFFFFF))
 #define IS_BIG_ENDIAN 1
 #else
-#define LWSIZE_GET(varsize) (((varsize) >> 2) & 0x3FFFFFFF)
-#define LWSIZE_SET(varsize, len) ((varsize) = (((uint32_t)(len)) << 2))
 #define IS_BIG_ENDIAN 0
 #endif
+
+#define LWSIZE_GET(varsize) (ntohl(varsize) & 0x3FFFFFFF)
+#define LWSIZE_SET(varsize, len) ((varsize) = htonl( (len) & 0x3FFFFFFF ))
 
 /******************************************************************/
 
