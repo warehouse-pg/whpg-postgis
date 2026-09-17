@@ -55,7 +55,8 @@ our $DB_ROLE_EXT_MKR = $ENV{"POSTGIS_REGRESS_ROLE_EXT_CREATOR"} || $DB_OWNER;
 our $TOP_SOURCEDIR = ${REGDIR} . '/..';
 our $ABS_TOP_SOURCEDIR = abs_path(${TOP_SOURCEDIR});
 our $TOP_BUILDDIR = $ENV{"POSTGIS_TOP_BUILD_DIR"};
-our $sysdiff = !system("diff --strip-trailing-cr $0 $0 2> /dev/null");
+our $GPHOME = $ENV{"GPHOME"} || die "GPHOME environment variable is not set\n";
+our $sysdiff = !system("$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
 
 ##################################################################
 # Set up some global variables
@@ -2244,7 +2245,7 @@ sub diff
 	my $diffstr = '';
 
 	if ( $sysdiff ) {
-		$diffstr = `diff --strip-trailing-cr -u $expected_file $obtained_file 2>&1`;
+		$diffstr = `$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
 		return $diffstr;
 	}
 
