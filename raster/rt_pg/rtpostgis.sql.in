@@ -7323,6 +7323,13 @@ CREATE OR REPLACE FUNCTION _add_raster_constraint_spatially_unique(rastschema na
 
 		cn := 'enforce_spatially_unique_' || quote_ident($2) || '_'|| $3;
 
+		-- WHPG/GPDB: EXCLUDE constraints are not supported on a
+		-- distributed table, so the "regular_blocking" spatially-unique
+		-- constraint (which upstream implements as an EXCLUDE
+		-- constraint) can never be created here -- give a clear error
+		-- instead of letting GPDB's own catalog/parser error through.
+		RAISE EXCEPTION 'Unable to add constraint: %, because Greenplum does not support exclusion constraint (EXCLUDE), so spatially unique constraints will be ignored. Skipping', quote_literal(cn);
+
 		sql := 'ALTER TABLE ' || fqtn ||
 			' ADD CONSTRAINT ' || quote_ident(cn) ||
 			' EXCLUDE ((' || quote_ident($3) || '::geometry) WITH =)';
