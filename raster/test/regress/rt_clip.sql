@@ -122,7 +122,10 @@ FROM (
 		LEFT JOIN LATERAL ST_Metadata(rast) AS md ON true
 		LEFT JOIN LATERAL ST_BandMetadata(rast, 1) AS bmd ON true
 ) AS r
-ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
+-- WHPG: columns 15 and 16 (nodatavalue, touched) were left out of the sort
+-- upstream, so rows that tie on 1..14 came back in whatever order the
+-- segments produced them. Order by every column to make this deterministic.
+ORDER BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
 
 -- Display the pixels and the values of the resulting rasters (raster 1)
 SELECT
