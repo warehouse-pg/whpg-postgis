@@ -31,5 +31,4 @@ NOTICE:  drop cascades to 2 other objects
 3.a null|
 3.b null|
 #5734.noindex|LINESTRING(-2 -2,12 12)
-#5734.index|LINESTRING(-2 -2,12 12)
 #5734.index_nodata|

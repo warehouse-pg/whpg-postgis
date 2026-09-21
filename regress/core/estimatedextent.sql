@@ -261,10 +261,13 @@ SELECT '#5734.noindex', ST_AsText(
 	0
 );
 CREATE INDEX ON t USING GIST (g);
-SELECT '#5734.index', ST_AsText(
-	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
-	0
-);
+-- WHPG: ST_EstimatedExtent cannot fall back to the index extent on GPDB, so
+-- this returns empty here. Same limitation as the '4.a box'/'4.b box'
+-- _postgis_index_extent cases disabled above.
+-- SELECT '#5734.index', ST_AsText(
+--	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),
+--	0
+-- );
 TRUNCATE t;
 SELECT '#5734.index_nodata', ST_AsText(
 	ST_BoundingDiagonal(ST_EstimatedExtent('t','g')),

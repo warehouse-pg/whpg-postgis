@@ -19,11 +19,11 @@ SELECT 't4', ST_AsText(unnest(ST_ClusterWithin(array_agg(geom ORDER BY id), 1.5)
 
 SELECT 't5', id, ST_AsText(geom), 
   ST_ClusterWithinWin(geom, 1.4) OVER () AS cluster
-  FROM cluster_inputs;
+  FROM cluster_inputs ORDER BY id;
 
 SELECT 't6', id, ST_AsText(geom), 
   ST_ClusterIntersectingWin(geom) OVER () AS cluster
-  FROM cluster_inputs;
+  FROM cluster_inputs ORDER BY id;
 
 -- tests for ST_DBSCAN
 

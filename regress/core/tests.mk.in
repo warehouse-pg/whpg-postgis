@@ -136,7 +136,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/subdivide \
 	$(top_srcdir)/regress/core/voronoi \
 	$(top_srcdir)/regress/core/regress_brin_index \
-	$(top_srcdir)/regress/core/regress_brin_index_3d \
 	$(top_srcdir)/regress/core/regress_brin_index_geography \
 	$(top_srcdir)/regress/core/minimum_clearance \
 	$(top_srcdir)/regress/core/oriented_envelope \
@@ -153,6 +152,12 @@ TESTS += \
         #Greenplum doesnot support BINARY, so test cannot continue...
     #$(top_srcdir)/regress/core/regress_index \
         #BUG to fix, JIRA: MPP-24904
+    #$(top_srcdir)/regress/core/regress_brin_index_3d \
+        #BRIN is lossy: the &&& recheck does not filter empty geometries, so the
+        #test asserts an exact set of false positives. That set is a function of
+        #the physical block layout, which on a distributed table depends on how
+        #rows land across segments (upstream sees 1, a 3-segment cluster sees 10),
+        #so no fixed expected output is correct here.
 
 # Slow slow tests
 TESTS_SLOW = \
