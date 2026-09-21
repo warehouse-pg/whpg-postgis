@@ -50,10 +50,6 @@ s/NOTICE:  Table doesn't have 'DISTRIBUTED BY' clause, and no column type is sui
 m/HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data\. Make sure column\(s\) chosen are the optimal data distribution key to minimize skew\.\n/
 s/HINT:  The 'DISTRIBUTED BY' clause determines the distribution of data\. Make sure column\(s\) chosen are the optimal data distribution key to minimize skew\.\n//
 
--- WHPG19 appends the raising source location to elog() messages, e.g.
---   ERROR:  ... Invalid pixel type: 4BUId (rtpg_mapalgebra.c:1379)
--- Strip it: the message is what these tests assert, and the line number
--- churns whenever the surrounding C file is edited.
 m/ \(\w+\.c:\d+\)/
 s/ \(\w+\.c:\d+\)//
 
