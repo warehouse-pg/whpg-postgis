@@ -1,3 +1,4 @@
+SET client_min_messages TO WARNING;
 DROP TABLE IF EXISTS raster_colormap_out;
 CREATE TABLE raster_colormap_out (
 	testid integer,
@@ -131,3 +132,5 @@ ORDER BY 1, 2, nband;
 
 DROP TABLE IF EXISTS raster_colormap_in;
 DROP TABLE IF EXISTS raster_colormap_out;
+
+RESET client_min_messages;

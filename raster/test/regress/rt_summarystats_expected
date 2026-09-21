@@ -4,7 +4,6 @@
 100
 -3.429|6.571
 -0.069|1.046
-NOTICE:  Invalid band index (must use 1-based). Returning NULL
 |
 NOTICE:  All pixels of band have the NODATA value
 (0,,,,,)

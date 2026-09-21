@@ -3,6 +3,7 @@
 -- Copyright (c) 2010 Mateusz Loskot <mateusz@loskot.net>
 -- Copyright (C) 2011 - 2013 Regents of the University of California
 --   <bkpark@ucdavis.edu>
+-- Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 --
 -- This program is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU General Public License
@@ -40,7 +41,7 @@ DROP TABLE IF EXISTS test_raster_columns;
 CREATE TABLE test_raster_columns (
 	rid integer,
 	rast raster
-);
+) DISTRIBUTED BY (rid);
 CREATE OR REPLACE FUNCTION make_test_raster(
 	rid integer,
 	width integer DEFAULT 2,
@@ -96,6 +97,7 @@ SELECT DropRasterConstraints(current_schema(), 'test_raster_columns', 'rast'::na
 DELETE FROM test_raster_columns;
 
 -- regular_blocking
+-- regular_blocking is not supported on Greenplum so the expected test output has to be changed
 
 SELECT make_test_raster(1, 3, 3, 0, 0);
 SELECT make_test_raster(2, 3, 3, 3, 0);

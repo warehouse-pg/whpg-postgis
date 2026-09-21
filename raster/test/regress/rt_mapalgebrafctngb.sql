@@ -25,7 +25,9 @@ CREATE OR REPLACE FUNCTION ST_TestRasterNgb(h integer, w integer, val float8)
 
 -- Tests
 -- Test NULL Raster. Should be true.
+SET client_min_messages TO ERROR;
 SELECT ST_MapAlgebraFctNgb(NULL, 1, NULL, 1, 1, 'ST_Sum4ma(float[][], text, text[])'::regprocedure, 'NULL', NULL) IS NULL FROM ST_TestRasterNgb(0, 0, -1) rast;
+RESET client_min_messages;
 
 -- Test empty Raster. Should be true.
 SELECT ST_IsEmpty(ST_MapAlgebraFctNgb(ST_MakeEmptyRaster(0, 10, 0, 0, 1, 1, 1, 1, 0), 1, NULL, 1, 1, 'ST_Sum4ma(float[][], text, text[])'::regprocedure, 'NULL', NULL));

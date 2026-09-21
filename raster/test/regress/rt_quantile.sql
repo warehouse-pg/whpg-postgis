@@ -1,3 +1,4 @@
+SET optimizer to OFF;
 SELECT
 	round(quantile::numeric, 3),
 	round(value::numeric, 3)
@@ -220,3 +221,5 @@ SELECT round(
 		2, 0.45
 	)::numeric, 3
 );
+
+RESET optimizer;

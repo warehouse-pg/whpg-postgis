@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------
 --
 -- Copyright (c) 2009 Mateusz Loskot <mateusz@loskot.net>
+-- Modifications Copyright (c) 2017 - Present Pivotal Software, Inc. All Rights Reserved.
 --
 -- This program is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU General Public License
@@ -21,7 +22,7 @@ CREATE TABLE rt_bytea_test (
         id numeric,
         name text,
         rast raster
-    );
+    ) DISTRIBUTED BY (id);
 
 INSERT INTO rt_bytea_test
 VALUES ( 0, '10x20, ip:0.5,0.5 scale:2,3 skew:0,0 srid:10 width:10 height:20',

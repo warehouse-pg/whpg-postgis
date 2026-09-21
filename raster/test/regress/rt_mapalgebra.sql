@@ -34,8 +34,6 @@ CREATE OR REPLACE FUNCTION raster_nmapalgebra_test(
 	END;
 	$$ LANGUAGE 'plpgsql' IMMUTABLE;
 
-SET client_min_messages TO notice;
-
 SELECT
 	rid,
 	ST_Value(
@@ -596,3 +594,5 @@ WHERE rid IN (2);
 DROP FUNCTION IF EXISTS raster_nmapalgebra_test(double precision[], int[], text[]);
 DROP FUNCTION IF EXISTS raster_nmapalgebra_test_bad_return(double precision[], int[], text[]);
 DROP TABLE IF EXISTS raster_nmapalgebra_in;
+
+RESET client_min_messages;
