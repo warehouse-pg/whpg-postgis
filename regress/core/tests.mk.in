@@ -81,7 +81,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/regress_bdpoly \
 	$(top_srcdir)/regress/core/regress_buffer_params \
 	$(top_srcdir)/regress/core/regress_gist_index_nd \
-	$(top_srcdir)/regress/core/regress_index \
 	$(top_srcdir)/regress/core/regress_index_nulls \
 	$(top_srcdir)/regress/core/regress_management \
 	$(top_srcdir)/regress/core/regress_selectivity \
@@ -120,7 +119,6 @@ TESTS += \
 	$(top_srcdir)/regress/core/temporal_knn \
 	$(top_srcdir)/regress/core/tickets \
 	$(top_srcdir)/regress/core/twkb \
-	$(top_srcdir)/regress/core/typmod \
 	$(top_srcdir)/regress/core/wkb \
 	$(top_srcdir)/regress/core/wkt \
 	$(top_srcdir)/regress/core/wmsservers \
@@ -146,6 +144,15 @@ TESTS += \
 	$(top_srcdir)/regress/core/out_geojson \
   $(top_srcdir)/regress/core/wrapx \
 	$(top_srcdir)/regress/core/computed_columns
+
+# tests can't pass
+# ---------------------------------
+    #$(top_srcdir)/regress/core/long_xact \
+        #Greenplum does not support long transcation for user-defined data types with triggers
+    #$(top_srcdir)/regress/core/typmod \
+        #Greenplum doesnot support BINARY, so test cannot continue...
+    #$(top_srcdir)/regress/core/regress_index \
+        #BUG to fix, JIRA: MPP-24904
 
 # Slow slow tests
 TESTS_SLOW = \

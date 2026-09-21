@@ -1,4 +1,8 @@
-﻿
+﻿set client_min_messages = warning;
+
+-- ORCA does not support index scans
+set optimizer = off;
+
 CREATE OR REPLACE FUNCTION qnodes(q text) RETURNS text
 LANGUAGE 'plpgsql' AS
 $$
@@ -26,30 +30,18 @@ $$;
 create table tbl_geomcollection_nd (
 	k serial,
 	g geometry
-);
+) DISTRIBUTED REPLICATED;
 
 \copy tbl_geomcollection_nd from 'regress_gist_index_nd.data';
-
-create table test_gist_idx_nd(
-	op char(3),
-	noidx bigint,
-	noidxscan varchar(32),
-	gistidx bigint,
-	gidxscan varchar(32));
-
 -------------------------------------------------------------------------------
 
 set enable_indexscan = off;
 set enable_bitmapscan = off;
 set enable_seqscan = on;
 
-insert into test_gist_idx_nd(op, noidx, noidxscan)
 select '&&&', count(*), qnodes('select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g') from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g;
-insert into test_gist_idx_nd(op, noidx, noidxscan)
 select '~~', count(*), qnodes('select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~ t2.g') from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~ t2.g;
-insert into test_gist_idx_nd(op, noidx, noidxscan)
 select '@@', count(*), qnodes('select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g') from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g;
-insert into test_gist_idx_nd(op, noidx, noidxscan)
 select '~~=', count(*), qnodes('select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g') from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g;
 
 ------------------------------------------------------------------------------
@@ -60,29 +52,22 @@ set enable_indexscan = on;
 set enable_bitmapscan = off;
 set enable_seqscan = off;
 
-update test_gist_idx_nd
-set gistidx = ( select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g ),
-gidxscan = qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g ')
-where op = '&&&';
-update test_gist_idx_nd
-set gistidx = ( select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~ t2.g ),
-gidxscan = qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~ t2.g ')
-where op = '~~';
-update test_gist_idx_nd
-set gistidx = ( select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g ),
-gidxscan = qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g ')
-where op = '@@';
-update test_gist_idx_nd
-set gistidx = ( select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g ),
-gidxscan = qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g ')
-where op = '~~=';
+select (select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g ) gistidx,
+qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g &&& t2.g ') gidxscan;
 
--------------------------------------------------------------------------------
+select (select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~  t2.g ) gistidx,
+qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~  t2.g ') gidxscan;
 
-select * from test_gist_idx_nd;
+select (select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g ) gistidx,
+qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g @@ t2.g ') gidxscan;
+
+select (select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g ) gistidx,
+qnodes(' select count(*) from tbl_geomcollection_nd t1, tbl_geomcollection_nd t2 where t1.g ~~= t2.g ') gidxscan;
 
 -------------------------------------------------------------------------------
 
 DROP TABLE tbl_geomcollection_nd CASCADE;
-DROP TABLE test_gist_idx_nd CASCADE;
+set client_min_messages = notice;
 DROP FUNCTION qnodes (text);
+
+reset optimizer;

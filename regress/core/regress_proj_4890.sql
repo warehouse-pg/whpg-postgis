@@ -1,3 +1,4 @@
+set client_min_messages=error;
 CREATE TABLE points AS
 	SELECT * FROM (
 		VALUES
@@ -21,7 +22,7 @@ CREATE TABLE points AS
 			('SRID=4269;POINT(-122.6403 49.1652)'::geometry),
 			('SRID=4269;POINT(-122.7717 49.2433)'::geometry),
 			('SRID=4269;POINT(-121.9587 49.1661)'::geometry)
-		) p(g);
+		) p(g) DISTRIBUTED REPLICATED;
 
 CREATE OR REPLACE FUNCTION get_closest(p geometry(POINT))
 	RETURNS geometry(POINT)
@@ -35,9 +36,13 @@ CREATE OR REPLACE FUNCTION get_closest(p geometry(POINT))
 	STABLE
 	LANGUAGE SQL;
 
+DROP TABLE IF EXISTS t1;
+CREATE TABLE t1 AS SELECT get_closest(g) FROM points;
+
 SELECT 4890 AS id,
-			 ST_AsText(ST_SnapToGrid(ST_Centroid(ST_Collect(get_closest(g) )), 0.0001))
-	FROM points;
+			 ST_AsText(ST_SnapToGrid(ST_Centroid(ST_Collect(get_closest )), 0.0001))
+	FROM t1;
 
 DROP TABLE points;
 DROP FUNCTION get_closest(geometry);
+reset client_min_messages;

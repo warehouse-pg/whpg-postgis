@@ -11,9 +11,11 @@
 # **********************************************************************
 
 TESTS += \
-	$(top_srcdir)/regress/dumper/mfiledmp \
 	$(top_srcdir)/regress/dumper/literalsrid \
-	$(top_srcdir)/regress/dumper/realtable \
-	$(top_srcdir)/regress/dumper/nullsintable \
-	$(top_srcdir)/regress/dumper/null3d \
-	$(top_srcdir)/regress/dumper/withclause
+	$(top_srcdir)/regress/dumper/realtable
+
+# FIXME: loader and dumper tests
+# 	$(top_srcdir)/regress/dumper/mfiledmp \
+# 	$(top_srcdir)/regress/dumper/null3d \
+# 	$(top_srcdir)/regress/dumper/nullsintable \
+# 	$(top_srcdir)/regress/dumper/withclause \

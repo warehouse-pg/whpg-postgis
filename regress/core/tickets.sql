@@ -256,6 +256,7 @@ FROM utm_dots
 WHERE ST_Area(ST_Buffer(the_geog,10)) NOT between 307 and 315
 LIMIT 10;
 
+ANALYZE utm_dots;
 SELECT '#304.a', Count(*) FROM utm_dots WHERE ST_DWithin(the_geog, 'POINT(0 0)'::geography, 3000000);
 
 CREATE INDEX utm_dots_gix ON utm_dots USING GIST (the_geog);
@@ -310,7 +311,7 @@ SELECT '#677.deprecated',round(ST_DistanceSpheroid(ST_GeomFromEWKT('MULTIPOLYGON
 SELECT '#677',round(ST_DistanceSpheroid(ST_GeomFromEWKT('MULTIPOLYGON(((-10 40,-10 55,-10 70,5 40,-10 40)))'), ST_GeomFromEWKT('MULTIPOINT(20 40,20 55,20 70,35 40,35 55,35 70,50 40,50 55,50 70)'), 'SPHEROID["GRS_1980",6378137,298.257222101]')) As result;
 
 -- #680 --
-SELECT '#680', encode(ST_AsBinary(geography(foo1.the_geom),'ndr'),'hex') As result FROM ((SELECT ST_SetSRID(ST_MakePointM(i,j,m),4326) As the_geom FROM generate_series(-10,50,10) As i CROSS JOIN generate_series(50,70, 20) AS j CROSS JOIN generate_series(1,2) As m ORDER BY i, j, i*j*m)) As foo1 LIMIT 1;
+SELECT '#680', encode(ST_AsBinary(geography(foo1.the_geom),'ndr'),'hex') As result FROM ((SELECT ST_SetSRID(ST_MakePointM(i,j,m),4326) As the_geom FROM generate_series(-10,50,10) As i CROSS JOIN generate_series(50,70, 20) AS j CROSS JOIN generate_series(1,2) As m ORDER BY i, j, i*j*m LIMIT 1)) As foo1;
 
 -- #681 --
 SELECT '#681a', ST_AsGML(ST_GeomFromText('POINT EMPTY', 4326));
@@ -389,7 +390,7 @@ INSERT INTO foo VALUES (2, st_geomfromtext('MULTIPOLYGON(((-113.7 35.3,-113.7 35
 
 select '#884', id, ST_Within(
 ST_GeomFromText('POINT (-113.4 35.6)'), the_geom
-) from foo;
+) from foo order by id;
 
 select '#938', 'POLYGON EMPTY'::geometry::box2d;
 
@@ -527,12 +528,12 @@ COPY cacheable FROM STDIN;
 \.
 select '#852.1', id, -- first run is not cached, consequent are cached
   st_intersects(g, 'POLYGON((0 0, 10 10, 1 0, 0 0))'::geometry),
-  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable;
+  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable order by id;
 UPDATE cacheable SET g = 'POINT(0.5 0.5)';
 -- New select, new cache
 select '#852.2', id, -- first run is not cached, consequent are cached
   st_intersects(g, 'POLYGON((0 0, 10 10, 1 0, 0 0))'::geometry),
-  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable;
+  st_intersects(g, 'POLYGON((0 0, 1 1, 1 0, 0 0))'::geometry) from cacheable order by id;
 DROP TABLE cacheable;
 
 -- #1489
@@ -1027,12 +1028,12 @@ SELECT '#1014a', ST_AsText(g) FROM (
 	SELECT 'POINT(-0 0)'::geometry AS g
 	UNION
 	SELECT 'POINT(0 0)'::geometry AS g
-) a;
+) a ORDER BY 2;
 SELECT '#1014b', ST_AsText(g) FROM (
 	SELECT 'POINT(0 1)'::geometry AS g
 	UNION
 	SELECT 'POINT(0 1)'::geometry AS g
-) a;
+) a ORDER BY 2;
 CREATE TABLE rec (id integer, g geometry);
 INSERT INTO rec VALUES (1, 'POINT(0 1)');
 INSERT INTO rec VALUES (2, 'POINT(1 2)');
@@ -1044,7 +1045,7 @@ WITH RECURSIVE path (id, g) AS (
     FROM path, rec
     WHERE ST_Y(path.g) = ST_X(rec.g)
 )
-SELECT '#1014c', id, st_astext(g) FROM path;
+SELECT '#1014c', id, st_astext(g) FROM path ORDER BY 2;
 SELECT '#1014d', ST_AsEWKT(g) as t FROM (
 	SELECT 'SRID=1;POINT(0 1)'::geometry AS g
 	UNION
