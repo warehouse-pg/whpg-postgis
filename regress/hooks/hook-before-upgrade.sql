@@ -79,8 +79,11 @@ FROM upgrade_test;
 
 -- Break probin of all postgis functions, as we expect
 -- the upgrade procedure to replace them all
+-- WHPG: catalog DML needs allow_system_table_mods on GPDB (whpg7 does the same)
+set allow_system_table_mods = on;
 UPDATE pg_proc SET probin = probin || '-uninstalled'
 WHERE probin like '%postgis%';
+reset allow_system_table_mods;
 
 
 -- Change SECURITY of postgis_version() to DEFINER
