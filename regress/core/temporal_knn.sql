@@ -49,13 +49,15 @@ SELECT row_number() over () n, t, d FROM (
 CREATE INDEX on knn_cpa USING gist (tr gist_geometry_ops_nd);
 ANALYZE knn_cpa;
 set enable_seqscan to off;
-
+-- ORCA does not support index scan
+set optimizer = off;
 SELECT '|=| idx', qnodes('select * from knn_cpa ORDER BY tr |=| ' || quote_literal(:qt ::text) || ' LIMIT 1');
 CREATE TABLE knn_cpa_index AS
 SELECT row_number() over () n, t, d FROM (
   SELECT t, ST_DistanceCPA(tr,:qt) d
   FROM knn_cpa ORDER BY tr |=| :qt LIMIT 5
 ) foo;
+reset optimizer;
 
 --SELECT * FROM knn_cpa_no_index;
 --SELECT * FROM knn_cpa_index;

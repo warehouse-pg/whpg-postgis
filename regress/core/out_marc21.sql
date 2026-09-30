@@ -3,6 +3,9 @@
 -- Copyright (C) 2021 University of Münster (WWU), Germany
 -- Written by Jim Jones <jim.jones@uni-muenster.de>
 
+-- Disable ORCA since it throws the following error
+-- ERROR:  query plan with multiple segworker groups is not supported
+SET optimizer = off;
 CREATE TABLE asmarc21_rt (gid int, geom geometry);
 INSERT INTO asmarc21_rt (gid,geom) VALUES
 	(1,'SRID=4326;GEOMETRYCOLLECTION(
@@ -149,7 +152,7 @@ FROM asmarc21_rt
 WHERE ST_GeometryType(geom) = 'ST_Point'
 ORDER BY gid;
 
-
+RESET optimizer;
 
 -- ## Dumping Collections ##
 
