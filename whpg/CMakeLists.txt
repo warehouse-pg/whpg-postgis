@@ -198,7 +198,10 @@ ExternalProject_Add(
     ./autogen.sh
     COMMAND
     ${CMAKE_COMMAND} -E env
-    "CFLAGS=-std=gnu99 -fPIC -Wno-error=int-conversion"
+    # gnu11, not gnu99: PG19's c.h expands StaticAssertDecl/StaticAssertExpr
+    # to C11 static_assert, and an explicit -std=gnu99 here overrides the
+    # -std=gnu11 that postgis's configure already picks.
+    "CFLAGS=-std=gnu11 -fPIC -Wno-error=int-conversion"
     # NOTE: Due to linker's strange behaviour, without putting -ltiff and
     # -lsqlite3 before other static libs, the final so won't be linking to the
     # so libs.
