@@ -74,8 +74,12 @@ $(top_builddir)/raster/rt_pg/rtpostgis_upgrade.sql:
 $(top_builddir)/topology/topology_upgrade.sql:
 	$(MAKE) -C ../topology/ topology_upgrade.sql
 
-
-$(top_builddir)/topology/uninstall_topology.sql:
+# Order-only prerequisite: with --without-topology nothing has built
+# topology.sql yet, and under make -j the two recursive makes below would
+# both generate it through the same topology.sql.tmp, one removing the
+# file under the other ("grep: topology.sql.tmp: No such file", "Unable
+# to locate target new version number"). Serialize them.
+$(top_builddir)/topology/uninstall_topology.sql: | $(top_builddir)/topology/topology_upgrade.sql
 	$(MAKE) -C ../topology/ uninstall_topology.sql
 
 postgis_restore_data.hardcoded: postgis_restore.pl.in Makefile
