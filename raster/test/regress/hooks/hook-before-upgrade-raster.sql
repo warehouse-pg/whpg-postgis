@@ -30,7 +30,11 @@ INSERT INTO upgrade_test_raster_with_regular_blocking(r) VALUES
 );
 
 --SET client_min_messages TO ERROR;
-SELECT AddRasterConstraints('upgrade_test_raster_with_regular_blocking', 'r', 'regular_blocking');
+-- WHPG: 'regular_blocking' is built on an EXCLUDE constraint, which GPDB does
+-- not support; AddRasterConstraints deliberately raises for it here (see
+-- check_raster_columns). Keep the table for the after-upgrade hook, add the
+-- constraints that do exist.
+SELECT AddRasterConstraints('upgrade_test_raster_with_regular_blocking', 'r');
 
 -- See https://trac.osgeo.org/postgis/ticket/5484
 CREATE VIEW upgrade_test_raster_view_st_value AS
