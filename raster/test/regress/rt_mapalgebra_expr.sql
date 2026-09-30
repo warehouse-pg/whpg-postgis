@@ -192,7 +192,10 @@ DEALLOCATE _rast_safe_query;
 -- Table must still exist after the blocked DROP
 SELECT 'T15', COUNT(*) = 0 FROM _rast_drop_guard;
 DROP TABLE _rast_drop_guard;
--- WHPG: and the guard table must really be gone afterwards
+-- WHPG: on WarehousePG 19 the read-only violation from the EXECUTE above is
+-- reported after the T15 row (the expected file carries that order); T16
+-- then proves the guard table was blocked from the injected DROP and is
+-- removed by the plain one.
 SELECT 'T16', COUNT(*) FROM pg_class WHERE relname = '_rast_drop_guard';
 
 DROP FUNCTION ST_TestRaster(ulx float8, uly float8, val float8);

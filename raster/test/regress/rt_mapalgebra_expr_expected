@@ -24,8 +24,8 @@ T11.2|10|2
 T12|t|t|t|t
 ERROR:  INSERT is not allowed in a non-volatile function
 ERROR:  COPY is not allowed in a non-volatile function
-ERROR:  DROP TABLE is not allowed in a non-volatile function
 T15|t
+ERROR:  DROP TABLE is not allowed in a non-volatile function
 T16|0
 0|1|FIRST|-2.000|-2.000|4|4|1.000|1.000|0.000|0.000|0|1|32BF|0.000|1.000|
 0|1|INTERSECTION|0.000|0.000|2|2|1.000|1.000|0.000|0.000|0|1|32BF|0.000|1.000|1.000

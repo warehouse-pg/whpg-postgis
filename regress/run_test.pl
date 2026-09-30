@@ -1499,6 +1499,26 @@ sub count_db_objects
 
 
 ##################################################################
+# WHPG: dump the names behind count_db_objects, one per line, so a
+# pre-install / post-uninstall mismatch can be diffed instead of guessed.
+##################################################################
+sub dump_db_objects
+{
+	my $file = shift;
+	my $cmd = "psql -qtXA -d $DB -c \"" .
+		"select 'type|'||typnamespace::regnamespace||'.'||typname from pg_type union all " .
+		"select 'proc|'||oid::regprocedure from pg_proc union all " .
+		"select 'cast|'||castsource::regtype||'->'||casttarget::regtype from pg_cast union all " .
+		"select 'aggregate|'||aggfnoid::regprocedure from pg_aggregate union all " .
+		"select 'operator|'||oid::regoperator from pg_operator union all " .
+		"select 'opclass|'||opcnamespace::regnamespace||'.'||opcname||'('||opcmethod||')' from pg_opclass union all " .
+		"select 'namespace|'||nspname from pg_namespace where nspname NOT LIKE 'pg_%' and nspname != '${OPT_SCHEMA}' union all " .
+		"select 'opfamily|'||opfnamespace::regnamespace||'.'||opfname||'('||opfmethod||')' from pg_opfamily" .
+		"\" 2>&1 | sort > \"$file\"";
+	system($cmd);
+}
+
+##################################################################
 # Count postgis objects
 ##################################################################
 sub count_postgis_objects
@@ -1547,6 +1567,7 @@ sub create_spatial
 
     # Count database objects before installing anything
     $OBJ_COUNT_PRE = count_db_objects();
+    dump_db_objects("${TMPDIR}/objects_pre_install.txt");
 
     if ( $OPT_EXTENSIONS )
     {
@@ -2129,10 +2150,17 @@ sub uninstall_spatial
 
 	show_progress(); # on to objects count
 	$OBJ_COUNT_POST = count_db_objects();
+	dump_db_objects("${TMPDIR}/objects_post_uninstall.txt");
 
 	if ( $OBJ_COUNT_POST != $OBJ_COUNT_PRE )
 	{
 		fail("Object count pre-install ($OBJ_COUNT_PRE) != post-uninstall ($OBJ_COUNT_POST)");
+		# WHPG: name the objects behind the count difference
+		my $objdiff = `diff "${TMPDIR}/objects_pre_install.txt" "${TMPDIR}/objects_post_uninstall.txt" 2>&1`;
+		print "-----------------------------------------------------------------------------\n";
+		print "Objects differing between pre-install and post-uninstall (< pre, > post):\n";
+		print $objdiff;
+		print "-----------------------------------------------------------------------------\n";
 
         if ( $OPT_UPGRADE_FROM )
         {
