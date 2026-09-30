@@ -31,6 +31,7 @@ INSERT INTO t1 SELECT
 	outdbbandnum
 FROM ST_BandMetadata((SELECT ST_SetBandIndex(rast, 1, 2) FROM raster_outdb_template WHERE rid = 1), ARRAY[]::int[]);
 SELECT * FROM t1 ORDER BY 1, 2;
+DROP TABLE t1;
 RESET client_min_messages;
 
 CREATE EVENT TRIGGER trg_autovac_disable ON ddl_command_end

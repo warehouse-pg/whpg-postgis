@@ -43,6 +43,7 @@ SELECT 4890 AS id,
 			 ST_AsText(ST_SnapToGrid(ST_Centroid(ST_Collect(get_closest )), 0.0001))
 	FROM t1;
 
+DROP TABLE t1;
 DROP TABLE points;
 DROP FUNCTION get_closest(geometry);
 reset client_min_messages;

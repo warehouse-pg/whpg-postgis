@@ -182,21 +182,28 @@ SELECT 'T14', ST_MapAlgebraExpr(
 CREATE TABLE _rast_drop_guard (id int);
 PREPARE _rast_safe_query(raster, int, text, text, float8) AS
     SELECT ST_MapAlgebraExpr($1, $2, $3, $4, $5);
-EXECUTE _rast_safe_query(
-    ST_AddBand(ST_MakeEmptyRaster(1,1,0,0,1,1,0,0,0), '8BUI'::text, 1, 0),
-    1, '8BUI',
-    '1)::double precision FROM generate_series(1,1); DROP TABLE _rast_drop_guard; SELECT (1',
-    NULL
-);
+-- WHPG: on WarehousePG the ERROR from this EXECUTE can be reported before or
+-- after the following result row, so capture it as a row instead of letting
+-- psql interleave stderr with stdout.
+CREATE TABLE _rast_drop_result (msg text);
+DO $$ BEGIN
+    EXECUTE 'EXECUTE _rast_safe_query('
+        || 'ST_AddBand(ST_MakeEmptyRaster(1,1,0,0,1,1,0,0,0), ''8BUI''::text, 1, 0), '
+        || '1, ''8BUI'', '
+        || '''1)::double precision FROM generate_series(1,1); DROP TABLE _rast_drop_guard; SELECT (1'', '
+        || 'NULL)';
+    INSERT INTO _rast_drop_result VALUES ('no error');
+EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _rast_drop_result VALUES (SQLERRM);
+END $$;
 DEALLOCATE _rast_safe_query;
+SELECT 'T15', msg FROM _rast_drop_result;
 -- Table must still exist after the blocked DROP
-SELECT 'T15', COUNT(*) = 0 FROM _rast_drop_guard;
+SELECT 'T16', COUNT(*) = 0 FROM _rast_drop_guard;
 DROP TABLE _rast_drop_guard;
--- WHPG: on WarehousePG 19 the read-only violation from the EXECUTE above is
--- reported after the T15 row (the expected file carries that order); T16
--- then proves the guard table was blocked from the injected DROP and is
--- removed by the plain one.
-SELECT 'T16', COUNT(*) FROM pg_class WHERE relname = '_rast_drop_guard';
+DROP TABLE _rast_drop_result;
+-- and the guard table must really be gone afterwards
+SELECT 'T17', COUNT(*) FROM pg_class WHERE relname = '_rast_drop_guard';
 
 DROP FUNCTION ST_TestRaster(ulx float8, uly float8, val float8);
 DROP FUNCTION raster_plus_twenty(pixel FLOAT, VARIADIC args TEXT[]);
