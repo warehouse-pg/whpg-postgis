@@ -5884,7 +5884,14 @@ CREATE OR REPLACE FUNCTION _st_samealignment_transfn(agg agg_samealignment, rast
 		END IF;
 
 		IF rast IS NULL THEN
+			-- A NULL raster makes the result NULL. On GPDB the rows reach
+			-- the aggregate from the segments in arbitrary order, so the
+			-- NULL need not be the last row seen: pin a placeholder
+			-- reference raster so a later raster cannot reset aligned.
 			agg.aligned := NULL;
+			IF agg.refraster IS NULL THEN
+				agg.refraster := @extschema@.ST_MakeEmptyRaster(0, 0, 0, 0, 0, 0, 0, 0, 0);
+			END IF;
 		ELSE
 			IF agg.refraster IS NULL THEN
 				m := @extschema@.ST_Metadata(rast);
