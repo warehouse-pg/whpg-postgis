@@ -2,7 +2,9 @@ The `CMakeLists.txt` in this directory enables the static link of the extension.
 
 # Build dependencies
 
-- `prec-devel` is needed for `address_standardizer` extension.
+- `pcre-devel` is needed for `address_standardizer` extension.
+- `libtiff-devel` is needed to build, and the matching runtime library
+  to load the extension.
 - Remember to install `cmake`, `autoconf`, `patch` and other normal development packages to build.
 
 # Build
@@ -32,7 +34,6 @@ make install
 ```
 
 # Run tests
-
 
 From the build directory:
 
