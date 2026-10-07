@@ -1,36 +1,72 @@
-**Doc / Make Dist**: [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_Make_Dist%2Flabel%3Ddebbie)](https://debbie.postgis.net/view/PostGIS/job/PostGIS_Make_Dist/label=debbie/)
+# WarehousePG PostGIS
 
+## Introduction
 
-| **Debbie** | **Winnie** | **Dronie** |
-| ---------  | ---------- | ---------  |
-| [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_3.3)](https://debbie.postgis.net/view/PostGIS/job/PostGIS_3.3/) | [![Build Status](https://winnie.postgis.net/buildStatus/icon?job=PostGIS_3.3)](https://winnie.postgis.net/view/PostGIS/job/PostGIS_3.3/) | [![Build Status](https://dronie.osgeo.org/api/badges/postgis/postgis/status.svg?branch=stable-3.3)](https://dronie.osgeo.org/postgis/postgis?branch=stable-3.3) ||
-| **Bessie** | **Bessie32** | **Cirrus-CI** |
-|  [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_Worker_Run%2Flabel%3Dbessie)](https://debbie.postgis.net/view/PostGIS/job/PostGIS_Worker_Run/label=bessie/) |  [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_Worker_Run%2Flabel%3Dbessie32)](https://debbie.postgis.net/view/PostGIS/job/PostGIS_Worker_Run/label=bessie32/) |  [![Build Status](https://api.cirrus-ci.com/github/postgis/postgis.svg?branch=stable-3.3)](http://cirrus-ci.com/github/postgis/postgis) |
-| **Berrie** | **Berrie64** |
-|  [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_Worker_Run/label=berrie&build=last:${params.reference=refs/heads/stable-3.3})](https://debbie.postgis.net/view/PostGIS/job/PostGIS_Worker_Run/label=berrie/) |  [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_Worker_Run/label=berrie64&build=last:${params.reference=refs/heads/stable-3.3})](https://debbie.postgis.net/view/PostGIS/job/PostGIS_Worker_Run/label=berrie64/) | ||
-| **GitHub** | **GitLab** |
-| [![CI](https://github.com/postgis/postgis/workflows/CI/badge.svg?branch%3Astable-3.3)](https://github.com/postgis/postgis/actions?query=branch%3Astable-3.3) | [![Gitlab-CI](https://gitlab.com/postgis/postgis/badges/stable-3.3/pipeline.svg)](https://gitlab.com/postgis/postgis/commits/stable-3.3) ||
+PostGIS extends a distributed database like WarehousePG with support for
+geographic objects, allowing location queries to be run in SQL. It adds
+geometry, geography and raster types, spatial indexes, and hundreds of
+functions for spatial analysis and processing, together with the TIGER
+geocoder and, when PCRE is available at build time, address standardization.
+The topology extension is not built.
 
-This file is here to play nicely with modern code repository facilities.
-Actual readme is [here](README.postgis).
+This repository is a fork of the open-source Greenplum PostGIS project
+(github.com/greenplum-db/geospatial, no longer public), renamed to whpg-postgis
+and maintained for WarehousePG. Each WarehousePG line has its own branch, based
+on an upstream PostGIS stable release (https://github.com/postgis/postgis) with
+the Greenplum and WarehousePG changes on top:
 
-## Official code repository, issue tracker and wiki:
-https://trac.osgeo.org/postgis/
+| Branch   | WarehousePG | PostGIS |
+|----------|-------------|---------|
+| `whpg6`  | 6           | 2.5.x   |
+| `whpg7`  | 7           | 3.3.x   |
+| `whpg19` | 19          | 3.6.x   |
 
-## Official chat room:
+This is the `whpg7` branch: PostGIS 3.3.8, based on upstream `stable-3.3`, for
+WarehousePG 7.
 
-Official chat room is the [#postgis:osgeo.org](https://matrix.to/#/#postgis:osgeo.org)
-Matrix room, also bridged to the irc://irc.libera.chat/#postgis
-[IRC](https://en.wikipedia.org/wiki/Comparison_of_Internet_Relay_Chat_clients) channel
-([web client](https://web.libera.chat/#postgis) may be useful)
+## Building and Testing
 
-## Official source tarball releases
+The CMake build in [`whpg`](whpg) builds PostGIS together with its bundled
+dependencies (proj, geos, gdal, libxml2 and json-c) and links them statically.
+libtiff, sqlite3 and PCRE come from the system and must be installed on both the
+build and the runtime hosts; `address_standardizer` is built only when PCRE is
+found.
 
-http://postgis.net/source
+`GPHOME` must point to your WarehousePG installation. proj and gdal look for
+their `share/proj` and `share/gdal` data under `PROJ_GDAL_PREFIX`, which
+defaults to `/usr/local/greenplum-db`. If WarehousePG is installed elsewhere,
+run `cmake -DPROJ_GDAL_PREFIX=$GPHOME ../whpg` instead of `cmake ../whpg`.
 
-If you would like to contribute to this project, please refer to our
-[contributing guidelines](CONTRIBUTING.md).
+```
+mkdir build
+cd build
+cmake ../whpg
+make
+make install                  # may need root to write into $GPHOME
+make installcheck-postgis     # needs a running WarehousePG cluster
+```
 
-## Project Home Page and Manuals
-Project homepage: http://postgis.net/
-PostGIS Manuals: http://postgis.net/documentation
+See [`whpg/README.md`](whpg/README.md) for build dependencies and other ways
+to build and test.
+
+## Documentation
+
+* Upstream readme: [README.postgis](README.postgis)
+* PostGIS manuals: https://postgis.net/documentation
+* Release notes: [NEWS](NEWS)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Code of Conduct](CODE-OF-CONDUCT.md). To report a security issue, see
+[SECURITY.md](SECURITY.md).
+
+## License
+
+GNU General Public License, version 2 or later, with some files under other
+licenses. See [LICENSE.md](LICENSE.md).
+
+## Credits
+
+PostGIS is developed by the PostGIS Project Steering Committee and many
+contributors; see [CREDITS](CREDITS) and https://postgis.net/.
