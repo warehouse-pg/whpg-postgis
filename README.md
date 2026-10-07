@@ -1,35 +1,76 @@
-This file is here to play nicely with modern code repository facilities.
-Actual readme is [here](README.postgis).
+# WarehousePG PostGIS
 
-## Official code repository, issue tracker and wiki:
-https://trac.osgeo.org/postgis/
+## Introduction
 
-## Build status badges:
-https://trac.osgeo.org/postgis/wiki/ContinuousIntegration
+PostGIS extends a distributed database like WarehousePG with support for
+geographic objects, allowing location queries to be run in SQL. It adds
+geometry, geography and raster types, spatial indexes, and hundreds of
+functions for spatial analysis and processing, together with the TIGER
+geocoder and, when PCRE is available at build time, address standardization.
+The topology extension is not built.
 
-## Translations
-We are using [Weblate software](https://weblate.org) for translation.  If you want to help out, log into [OSGeo Weblate](https://weblate.osgeo.org/projects/postgis/).
+This repository is a fork of the open-source Greenplum PostGIS project
+(github.com/greenplum-db/geospatial, no longer public), renamed to whpg-postgis
+and maintained for WarehousePG. Each WarehousePG line has its own branch, based
+on an upstream PostGIS stable release (https://github.com/postgis/postgis) with
+the Greenplum and WarehousePG changes on top:
 
-If you don't already have an OSGeo account, [you can get one here](https://id.osgeo.org/ldap/create). An OSGeo account will allow you to participate in translating both the PostGIS workshop and PostGIS documentation and also submit bug tickets.
+| Branch   | WarehousePG | PostGIS |
+|----------|-------------|---------|
+| `whpg6`  | 6           | 2.5.x   |
+| `whpg7`  | 7           | 3.3.x   |
+| `whpg19` | 19          | 3.6.x   |
 
-<a href="https://weblate.osgeo.org/engage/postgis/">
-<img src="https://weblate.osgeo.org/widgets/postgis/-/287x66-grey.png" alt="Translation status" />
-</a>
+This is the `whpg19` branch: PostGIS 3.6.4, based on upstream `stable-3.6`, for
+WarehousePG 19.
 
-## Official chat room:
+## Building and Testing
 
-Official chat room is the [#postgis:osgeo.org](https://matrix.to/#/#postgis:osgeo.org)
-Matrix room, also bridged to the irc://irc.libera.chat/#postgis
-[IRC](https://en.wikipedia.org/wiki/Comparison_of_Internet_Relay_Chat_clients) channel
-([web client](https://web.libera.chat/#postgis) may be useful)
+The CMake build in [`whpg`](whpg) builds PostGIS together with its bundled
+dependencies (proj, geos, gdal, libxml2 and json-c) and links them statically.
+libtiff, sqlite3 and PCRE come from the system and must be installed on both the
+build and the runtime hosts; `address_standardizer` is built only when PCRE is
+found.
 
-## Official source tarball releases
+`GPHOME` must point to your WarehousePG installation. proj and gdal look for
+their `share/proj` and `share/gdal` data under `PROJ_GDAL_PREFIX`, which
+defaults to `/usr/local/greenplum-db`. If WarehousePG is installed elsewhere,
+run `cmake -DPROJ_GDAL_PREFIX=$GPHOME ../whpg` instead of `cmake ../whpg`.
 
-http://postgis.net/source
+```
+mkdir build
+cd build
+cmake ../whpg
+make
+make install                  # may need root to write into $GPHOME
+make installcheck-postgis     # needs a running WarehousePG cluster
+```
 
-If you would like to contribute to this project, please refer to our
-[contributing guidelines](CONTRIBUTING.md).
+On this branch `postgis_tiger_geocoder` requires `plpython3u`, so PL/Python 3
+must be available in the cluster for the TIGER geocoder tests and for
+`CREATE EXTENSION postgis_tiger_geocoder`.
 
-## Project Home Page and Manuals
-Project homepage: http://postgis.net/
-PostGIS Manuals: http://postgis.net/documentation
+See [`whpg/README.md`](whpg/README.md) for build dependencies and other ways
+to build and test.
+
+## Documentation
+
+* Upstream readme: [README.postgis](README.postgis)
+* PostGIS manuals: https://postgis.net/documentation
+* Release notes: [NEWS](NEWS)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Code of Conduct](CODE-OF-CONDUCT.md). To report a security issue, see
+[SECURITY.md](SECURITY.md).
+
+## License
+
+GNU General Public License, version 2 or later, with some files under other
+licenses. See [LICENSE.md](LICENSE.md).
+
+## Credits
+
+PostGIS is developed by the PostGIS Project Steering Committee and many
+contributors; see [CREDITS](CREDITS) and https://postgis.net/.

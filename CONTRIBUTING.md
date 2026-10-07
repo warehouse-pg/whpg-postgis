@@ -1,19 +1,57 @@
-PostGIS development planning happens via a [Trac instance](https://trac.osgeo.org/postgis/).
+# Contributing
 
-In order for proper scheduling of contributions acceptance/merging it
-is recommended to file a ticket there and add your patch or a link
-to a patch or to a public git branch where your development is ongoing.
+We warmly welcome and greatly appreciate contributions from the
+community. By participating you agree to the [code of
+conduct](https://github.com/warehouse-pg/whpg-postgis/blob/whpg19/CODE-OF-CONDUCT.md).
+Overall, we follow WHPG's comprehensive contribution policy. Please
+refer to it [here](https://github.com/warehouse-pg/warehouse-pg/blob/main/CONTRIBUTING.md)
+for details.
 
-Filing a ticket requires setting up an OSGeo account, which lets you
-contribute to every project of the [Open Source Geospatial Foundation](http://www.osgeo.org/).
+## Getting Started
 
-As we understand you might not want to setup a new account, simply
-filing a pull request on one of the [PostGIS code mirrors](https://trac.osgeo.org/postgis/wiki/CodeMirrors) is also welcome,
-but it is easier for such contributions to miss our radars unless
-it _also_ has a matching Trac ticket.
+* Fork the `whpg-postgis` repository on GitHub
+* Clone the forked repository
+* Follow the README to set up your environment and run the tests
 
-If you intend to be involved for more than an occasional patch we
-recommend you to subscribe to the [development mailing list](https://lists.osgeo.org/mailman/listinfo/postgis-devel).
+## Creating a change
 
-Note that We also welcome
-[git patches via email](https://git-send-email.io)
+* Create your own feature branch (e.g. `git checkout -b
+  my_feature_branch`) and make changes on this branch.
+* Try and follow similar coding styles as found throughout the code
+  base.
+* Make commits as logical units for ease of reviewing.
+* Each WarehousePG line has its own branch (`whpg6`, `whpg7` and
+  `whpg19`). Base your change on the branch for the line you target,
+  rebase with it often to stay in sync, and open a separate pull request
+  for each line the change applies to.
+* Add or update tests to cover your code. Set `GPHOME` to your
+  WarehousePG installation, build with `cmake ../whpg` and `make` in a
+  separate build directory, then run `make install` and the regression
+  tests against a running WarehousePG cluster. See
+  [`whpg/README.md`](whpg/README.md) for build and test details.
+* Ensure a well written commit message as explained
+  [here](https://chris.beams.io/posts/git-commit/).
+* Push your local branch to the fork (e.g. `git push <your_fork>
+  my_feature_branch`)
+
+## Submitting a Pull Request
+
+* Create a [pull request from your
+  fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork).
+* Address PR feedback with fixup and/or squash commits:
+```
+git add .
+git commit --fixup <commit SHA>
+  -- or --
+git commit --squash <commit SHA>
+```
+* Once approved, before merging into `whpg19` squash your fixups with:
+```
+git rebase -i --autosquash origin/whpg19
+git push --force-with-lease $USER <my-feature-branch>
+```
+
+Your contribution will be analyzed for product fit and engineering
+quality prior to merging. Your pull request is much more likely to be
+accepted if it is small and focused with a clear message that conveys
+the intent of your change.
