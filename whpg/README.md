@@ -2,7 +2,9 @@ The `CMakeLists.txt` in this directory enables the static link of the extension.
 
 # Build dependencies
 
-- `prec-devel` is needed for `address_standardizer` extension.
+- `pcre-devel` is needed for `address_standardizer` extension.
+- `libtiff-devel` and `sqlite-devel` are needed to build, and the matching runtime libraries
+  to load the extension.
 - Remember to install `cmake`, `autoconf`, `patch` and other normal development packages to build.
 
 # Build
@@ -33,11 +35,17 @@ make install
 
 # Run tests
 
+From the build directory:
 
 ```
+cd build
+make installcheck-postgis
+```
 
-From the source root directory
+From the source root directory, running the same tests as the CMake target
+(`make installcheck` would also run the upgrade tests, which the CMake target
+does not run yet):
 
 ```
-RUNTESTFLAGS="-v --extension=plpython3u" make installcheck
+RUNTESTFLAGS="-v --extension=plpython3u" make installcheck-base
 ```
