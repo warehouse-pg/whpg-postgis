@@ -232,7 +232,7 @@ set PGBIN=C:\\Program Files\\PostgreSQL\\9.6\\bin\\
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+rem Put the password in %APPDATA%\\postgresql\\pgpass.conf instead of setting PGPASSWORD
 set PGDATABASE=geocoder
 set PSQL="%PGBIN%psql"
 set SHP2PGSQL="%PGBIN%shp2pgsql"
@@ -255,7 +255,7 @@ export PGBIN=/usr/lib/postgresql/9.6/bin
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Put the password in ~/.pgpass (chmod 600) instead of exporting PGPASSWORD
 export PGDATABASE=geocoder
 PSQL=${PGBIN}/psql
 SHP2PGSQL=shp2pgsql
@@ -549,7 +549,7 @@ BEGIN
 					AND table_schema = var_staging_schema
 					AND column_name <> ALL( param_columns_exclude)
                     ORDER BY ordinal_position ), ',') ||' FROM '
-					|| var_staging_schema || '.' || param_staging_table || ';';
+					|| quote_ident(var_staging_schema) || '.' || quote_ident(param_staging_table) || ';';
 	RAISE NOTICE '%', var_sql;
 	EXECUTE (var_sql);
 	GET DIAGNOSTICS var_num_records = ROW_COUNT;
