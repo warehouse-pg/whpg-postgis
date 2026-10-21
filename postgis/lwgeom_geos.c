@@ -1000,11 +1000,12 @@ Datum buffer(PG_FUNCTION_ARGS)
 	{
 		char *param;
 		char *params = text_to_cstring(params_text);
+		char *saveptr = NULL;
 
 		for (param=params; ; param=NULL)
 		{
 			char *key, *val;
-			param = strtok(param, " ");
+			param = strtok_r(param, " ", &saveptr);
 			if (!param) break;
 			POSTGIS_DEBUGF(3, "Param: %s", param);
 
@@ -1263,6 +1264,7 @@ Datum ST_OffsetCurve(PG_FUNCTION_ARGS)
 	if ( nargs > 2 )
 	{
 		text *wkttext = PG_GETARG_TEXT_P(2);
+		char *saveptr = NULL;
 		paramstr = text_to_cstring(wkttext);
 
 		POSTGIS_DEBUGF(3, "paramstr: %s", paramstr);
@@ -1270,7 +1272,7 @@ Datum ST_OffsetCurve(PG_FUNCTION_ARGS)
 		for ( param=paramstr; ; param=NULL )
 		{
 			char *key, *val;
-			param = strtok(param, " ");
+			param = strtok_r(param, " ", &saveptr);
 			if (!param) break;
 			POSTGIS_DEBUGF(3, "Param: %s", param);
 

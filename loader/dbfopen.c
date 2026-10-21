@@ -509,7 +509,7 @@ DBFOpenLL( const char * pszFilename, const char * pszAccess, SAHooks *psHooks )
     {
         snprintf( REINTERPRET_CAST(char *, pabyBuf), nBufSize, "LDID/%d", psDBF->iLanguageDriver );
         psDBF->pszCodePage = STATIC_CAST(char *, malloc(strlen(REINTERPRET_CAST(char*, pabyBuf)) + 1));
-        strcpy( psDBF->pszCodePage, REINTERPRET_CAST(char *, pabyBuf) );
+        memcpy( psDBF->pszCodePage, pabyBuf, strlen(REINTERPRET_CAST(char *, pabyBuf)) + 1 );
     }
 
 /* -------------------------------------------------------------------- */
@@ -767,7 +767,7 @@ DBFCreateLL( const char * pszFilename, const char * pszCodePage, SAHooks *psHook
     if( pszCodePage )
     {
         psDBF->pszCodePage = STATIC_CAST(char *, malloc( strlen(pszCodePage) + 1 ));
-        strcpy( psDBF->pszCodePage, pszCodePage );
+        memcpy( psDBF->pszCodePage, pszCodePage, strlen(pszCodePage) + 1 );
     }
     DBFSetLastModifiedDate(psDBF, 95, 7, 26); /* dummy date */
 
@@ -922,7 +922,12 @@ DBFAddNativeFieldType(DBFHandle psDBF, const char * pszFieldName,
     for( i = 0; i < XBASE_FLDHDR_SZ; i++ )
         pszFInfo[i] = '\0';
 
-    strncpy( pszFInfo, pszFieldName, XBASE_FLDNAME_LEN_WRITE );
+    {
+        size_t nNameLen = strlen( pszFieldName );
+        if( nNameLen > XBASE_FLDNAME_LEN_WRITE )
+            nNameLen = XBASE_FLDNAME_LEN_WRITE;
+        memcpy( pszFInfo, pszFieldName, nNameLen );
+    }
 
     pszFInfo[11] = psDBF->pachFieldType[psDBF->nFields-1];
 
@@ -1279,8 +1284,8 @@ DBFGetFieldInfo( DBFHandle psDBF, int iField, char * pszFieldName,
     {
 	int	i;
 
-	strncpy( pszFieldName, STATIC_CAST(char *,psDBF->pszHeader)+iField*XBASE_FLDHDR_SZ,
-                 XBASE_FLDNAME_LEN_READ );
+	memcpy( pszFieldName, STATIC_CAST(char *,psDBF->pszHeader)+iField*XBASE_FLDHDR_SZ,
+                XBASE_FLDNAME_LEN_READ );
 	pszFieldName[XBASE_FLDNAME_LEN_READ] = '\0';
 	for( i = XBASE_FLDNAME_LEN_READ - 1; i > 0 && pszFieldName[i] == ' '; i-- )
 	    pszFieldName[i] = '\0';
@@ -1417,7 +1422,7 @@ static int DBFWriteAttribute(DBFHandle psDBF, int hEntity, int iField,
 	    j = STATIC_CAST(int, strlen(STATIC_CAST(char *,pValue)));
         }
 
-	strncpy(REINTERPRET_CAST(char *, pabyRec+psDBF->panFieldOffset[iField]),
+	memcpy(REINTERPRET_CAST(char *, pabyRec+psDBF->panFieldOffset[iField]),
 		STATIC_CAST(const char *, pValue), j );
 	break;
     }
@@ -1486,8 +1491,8 @@ DBFWriteAttributeDirectly(DBFHandle psDBF, int hEntity, int iField,
         j = STATIC_CAST(int, strlen(STATIC_CAST(char *, pValue)));
     }
 
-    strncpy(REINTERPRET_CAST(char *, pabyRec+psDBF->panFieldOffset[iField]),
-            STATIC_CAST(const char *, pValue), j );
+    memcpy(REINTERPRET_CAST(char *, pabyRec+psDBF->panFieldOffset[iField]),
+           STATIC_CAST(const char *, pValue), j );
 
     psDBF->bCurrentRecordModified = TRUE;
     psDBF->bUpdated = TRUE;
@@ -2108,7 +2113,12 @@ DBFAlterFieldDefn( DBFHandle psDBF, int iField, const char * pszFieldName,
     for( i = 0; i < XBASE_FLDHDR_SZ; i++ )
         pszFInfo[i] = '\0';
 
-    strncpy( pszFInfo, pszFieldName, XBASE_FLDNAME_LEN_WRITE );
+    {
+        size_t nNameLen = strlen( pszFieldName );
+        if( nNameLen > XBASE_FLDNAME_LEN_WRITE )
+            nNameLen = XBASE_FLDNAME_LEN_WRITE;
+        memcpy( pszFInfo, pszFieldName, nNameLen );
+    }
 
     pszFInfo[11] = psDBF->pachFieldType[iField];
 

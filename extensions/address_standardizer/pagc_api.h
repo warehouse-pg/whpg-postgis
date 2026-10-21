@@ -1078,7 +1078,7 @@ int tokenize_landmark_words(char *, char **) ;
    DEST = (char * ) malloc( sizeof( char ) * ( strlen( SRC ) + 1 ) ) ; \
    MEM_ERR(DEST,WHERE,RET_VAL) ; \
    BLANK_STRING(DEST) ; \
-   strcpy(DEST,SRC)
+   memcpy(DEST,SRC,strlen(SRC)+1)
 
 
 #define PAGC_ALLOC_STRUC(LOC,TYP,WHERE,EXIT_TYPE) \
@@ -1156,7 +1156,7 @@ int tokenize_landmark_words(char *, char **) ;
 /* construct concatenated keys for the concat index */
 #define MAKE_CONCAT_KEY(TARGET,SOURCE_A,SOURCE_B) \
    BLANK_STRING(TARGET) ; \
-   strcpy( TARGET , SOURCE_A ) ; \
+   append_string_to_max( TARGET , SOURCE_A , MAXSTRLEN ) ; \
    COMMA_APPEND_WITH_LEN( TARGET , SOURCE_B , MAXSTRLEN )
 
 #define MAKE_CONCAT_SOUNDEX_KEY(SOURCE_A,SOURCE_B,DEST,HOLD,CNT,SW) \

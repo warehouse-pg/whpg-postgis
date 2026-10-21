@@ -307,16 +307,16 @@ static int standardize_command_line( STANDARDIZER *std ,
       }
       /* -- get input first, then standardize -- */
       if ( fld_num == 1 ) {
-         strcpy( unstandard_mic ,
-                 input_str ) ;
+         snprintf( unstandard_mic , MAXSTRLEN , "%s" ,
+                   input_str ) ;
          if ( *unstandard_mic == SENTINEL ) {
             printf( "No MICRO input\n" ) ;
             return FALSE ; /* -- indicate no standardization -- */
          }
          convert_latin_one ( unstandard_mic ) ;
       } else {
-         strcpy( unstandard_mac_left ,
-                 input_str ) ;
+         snprintf( unstandard_mac_left , MAXSTRLEN , "%s" ,
+                   input_str ) ;
          if ( *unstandard_mac_left != SENTINEL ) {
             have_user_macros = TRUE ;
             convert_latin_one ( unstandard_mac_left ) ;

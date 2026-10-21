@@ -447,7 +447,7 @@ lwgeom_from_geojson(const char *geojson, char **srs)
 					if (pszName)
 					{
 						*srs = lwalloc(strlen(pszName) + 1);
-						strcpy(*srs, pszName);
+						memcpy(*srs, pszName, strlen(pszName) + 1);
 					}
 				}
 			}

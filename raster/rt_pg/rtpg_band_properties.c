@@ -166,7 +166,7 @@ Datum RASTER_getBandPixelTypeName(PG_FUNCTION_ARGS)
 
     memset(VARDATA(result), 0, name_size);
     ptr = (char *)result + VARHDRSZ;
-		strcpy(ptr, rt_pixtype_name(pixtype));
+		strlcpy(ptr, rt_pixtype_name(pixtype), name_size);
 
     size = VARHDRSZ + strlen(ptr);
     SET_VARSIZE(result, size);
@@ -659,7 +659,7 @@ Datum RASTER_bandmetadata(PG_FUNCTION_ARGS)
 			chartmp = rt_pixtype_name(rt_band_get_pixtype(band));
 			charlen = strlen(chartmp) + 1;
 			bmd[i].pixeltype = palloc(sizeof(char) * charlen);
-			strncpy(bmd[i].pixeltype, chartmp, charlen);
+			memcpy(bmd[i].pixeltype, chartmp, charlen);
 
 			/* hasnodatavalue */
 			if (rt_band_get_hasnodata_flag(band))
@@ -678,7 +678,7 @@ Datum RASTER_bandmetadata(PG_FUNCTION_ARGS)
 			if (chartmp) {
 				charlen = strlen(chartmp) + 1;
 				bmd[i].bandpath = palloc(sizeof(char) * charlen);
-				strncpy(bmd[i].bandpath, chartmp, charlen);
+				memcpy(bmd[i].bandpath, chartmp, charlen);
 			}
 			else
 				bmd[i].bandpath = NULL;
