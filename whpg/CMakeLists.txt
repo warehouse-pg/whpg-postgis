@@ -234,7 +234,7 @@ ExternalProject_Add(
 add_custom_target(
     installcheck-postgis
     ${CMAKE_COMMAND} -E env
-    "RUNTESTFLAGS=-v --extension=plpython3u"
+    "RUNTESTFLAGS=-v"
     # TODO: enable the upgrade test
     make installcheck-base with_llvm=no
     WORKING_DIRECTORY ${POSTGIS_SOURCE_DIR}
