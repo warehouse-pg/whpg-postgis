@@ -2109,6 +2109,7 @@ sub drop_spatial_extensions
     {
         $cmd = "psql $psql_opts -c \"DROP EXTENSION IF EXISTS postgis_tiger_geocoder;
                 DROP EXTENSION IF EXISTS fuzzystrmatch;
+                DROP EXTENSION IF EXISTS plpython3u; -- WHPG: pulled in by CASCADE (tiger's loader_generate_script is plpython3u)
                 DROP SCHEMA IF EXISTS tiger;
                 DROP SCHEMA IF EXISTS tiger_data;
                 \" $DB >> $REGRESS_LOG 2>&1";
@@ -2274,6 +2275,11 @@ sub diff
 
 	if ( $sysdiff ) {
 		$diffstr = `$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl -b -w -gpd_init $REGDIR/global_init_file --strip-trailing-cr $expected_file $obtained_file 2>&1`;
+		# WHPG: gpdiff.pl's GetOptions spec "verbose|Verbose" makes newer
+		# Getopt::Long (perl >= 5.36, e.g. Homebrew perl) print a
+		# 'Duplicate specification' warning on stderr. It is not a diff;
+		# drop it so an otherwise identical output does not fail the test.
+		$diffstr =~ s/^Duplicate specification "[^"]*" for option "[^"]*"\n//mg;
 		return $diffstr;
 	}
 

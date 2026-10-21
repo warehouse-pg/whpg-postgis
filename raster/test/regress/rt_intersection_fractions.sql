@@ -2,10 +2,13 @@
 ---------------------------------------------------------------
 ----- ST_IntersectionFractions --------------------------------
 
+-- WHPG: rows come back from the segments in arbitrary order; number them
+-- in insertion order and ORDER BY that so the output is deterministic.
 CREATE TABLE raster_proportions_rast (
+	id serial,
 	name text,
 	rast raster
-);
+) DISTRIBUTED BY (id);
 
 INSERT INTO raster_proportions_rast (name, rast) VALUES (
 	'2x2 raster covering 0,0 to 10,10',
@@ -52,24 +55,24 @@ SELECT 'polygon', name, ST_DumpValues(
 	ST_IntersectionFractions(
 		rast,
 		'POLYGON((5 0, 0 5, 5 10, 10 5, 5 0))'::geometry),1)
-FROM raster_proportions_rast;
+FROM raster_proportions_rast ORDER BY id;
 
 SELECT 'multipolygon', name, ST_DumpValues(
 	ST_IntersectionFractions(
 		rast,
 		'MULTIPOLYGON(((5 0, 0 5, 5 10, 10 5, 5 0)))'::geometry),1)
-FROM raster_proportions_rast;
+FROM raster_proportions_rast ORDER BY id;
 
 SELECT 'linestring', name, ST_DumpValues(
 	ST_IntersectionFractions(
 		rast,
 		'LINESTRING(0 0, 10 10)'::geometry), 1)
-FROM raster_proportions_rast;
+FROM raster_proportions_rast ORDER BY id;
 
 SELECT 'multilinestring', name, ST_DumpValues(
 	ST_IntersectionFractions(
 		rast,
 		'MULTILINESTRING((0 0, 10 10), (0 10, 10 0))'::geometry), 1)
-FROM raster_proportions_rast;
+FROM raster_proportions_rast ORDER BY id;
 
 DROP TABLE IF EXISTS raster_proportions_rast;
