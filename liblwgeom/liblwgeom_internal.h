@@ -516,6 +516,7 @@ int gbox_contains_point2d(const GBOX *g, const POINT2D *p);
 int lwpoly_contains_point(const LWPOLY *poly, const POINT2D *pt);
 POINT4D* lwmpoint_extract_points_4d(const LWMPOINT* g, uint32_t* npoints, int* input_empty);
 char* lwstrdup(const char* a);
+void lwstr_append(char *dst, size_t dstsize, const char *src, size_t n);
 void* lwalloc0(size_t sz);
 
 #endif /* _LIBLWGEOM_INTERNAL_H */

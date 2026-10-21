@@ -815,7 +815,7 @@ projFileCreate(SHPDUMPERSTATE *state)
 				/*	on the passed in filename we will strip it off.			*/
 				/* -------------------------------------------------------------------- */
 				pszBasename = (char *) malloc(strlen(pszFilename)+5);
-				strcpy( pszBasename, pszFilename );
+				memcpy( pszBasename, pszFilename, strlen(pszFilename) + 1 );
 				for ( i = strlen(pszBasename)-1;
 				        i > 0 && pszBasename[i] != '.' && pszBasename[i] != '/'
 				        && pszBasename[i] != '\\';
@@ -1512,8 +1512,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 
 		/* Limit dbf field name to 10-digits */
 		dbffieldname = malloc(11);
-		strncpy(dbffieldname, ptr, 10);
-		dbffieldname[10] = '\0';
+		snprintf(dbffieldname, 11, "%s", ptr);
 
 		/* If a column map file has been passed in,
 		 * use this to create the dbf field name from
@@ -1522,8 +1521,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 			const char *mapped = colmap_dbf_by_pg(&state->column_map, pgfieldname);
 			if (mapped)
 			{
-				strncpy(dbffieldname, mapped, 10);
-				dbffieldname[10] = '\0';
+				snprintf(dbffieldname, 11, "%s", mapped);
 			}
 		}
 
@@ -1555,7 +1553,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 			snprintf(buf, sizeof(buf), _("Warning, field %s renamed to %s\n"), pgfieldname, dbffieldname);
 			/* Note: we concatenate all warnings from the main loop as this is useful information */
 			if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
-				strncat(state->message, buf, SHPDUMPERMSGLEN - (strlen(state->message) + 1));
+				snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 
 			ret = SHPDUMPERWARN;
 		}
@@ -1749,7 +1747,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 					"will be truncated.\n"), dbffieldname, MAX_DBF_FIELD_SIZE);
 
 				if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
-					strncat(state->message, buf, SHPDUMPERMSGLEN - (strlen(state->message)+1));
+					snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 
 				dbffieldsize = MAX_DBF_FIELD_SIZE;
 
@@ -1810,7 +1808,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 			   but let's issue a warning... */
 			snprintf(buf, sizeof(buf), _("No geometry column found.\nThe DBF file will be created but not the shx or shp files.\n"));
 			if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
-				strncat(state->message, buf, SHPDUMPERMSGLEN - (strlen(state->message)+1));
+				snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 
 			state->shp = NULL;
 
@@ -2071,7 +2069,8 @@ int ShpLoaderGenerateShapeRow(SHPDUMPERSTATE *state)
 					copy directly to hexewkb */
 					hexewkb_len = PQgetlength(state->fetchres, state->curresrow, geocolnum);
 					hexewkb = malloc(hexewkb_len + 1);
-					strncpy(hexewkb, val, hexewkb_len + 1);
+					memcpy(hexewkb, val, hexewkb_len);
+					hexewkb[hexewkb_len] = '\0';
 				}
 			}
 			else /* binary */

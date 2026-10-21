@@ -180,14 +180,14 @@ strreplace(
 		/* Replace each old string found with new string  */
 		while ((limit-- > 0) && (tmp = strstr(tmp, oldstr)) != NULL) {
 			length = (tmp - str); /* Number of chars to keep intouched */
-			strncpy(result + reslen, str, length); /* Original part keeped */
-			strcpy(result + (reslen += length), newstr); /* Insert new string */
+			memcpy(result + reslen, str, length); /* Original part keeped */
+			memcpy(result + (reslen += length), newstr, newlen); /* Insert new string */
 
 			reslen += newlen;
 			tmp += oldlen;
 			str = tmp;
 		}
-		strcpy(result + reslen, str); /* Copies last part and ending null char */
+		memcpy(result + reslen, str, strlen(str) + 1); /* Copies last part and ending null char */
 	}
 
 	if (count != NULL) *count = found;
@@ -210,6 +210,7 @@ strsplit(const char *str, const char *delimiter, uint32_t *n) {
 	char *tmp = NULL;
 	char **rtn = NULL;
 	char *token = NULL;
+	char *saveptr = NULL;
 
 	*n = 0;
 	if (!str)
@@ -221,7 +222,7 @@ strsplit(const char *str, const char *delimiter, uint32_t *n) {
 		rterror(_("strsplit: Not enough memory"));
 		return NULL;
 	}
-	strcpy(tmp, str);
+	memcpy(tmp, str, strlen(str) + 1);
 
 	if (!strlen(tmp) || !delimiter || !strlen(delimiter)) {
 		*n = 1;
@@ -235,12 +236,12 @@ strsplit(const char *str, const char *delimiter, uint32_t *n) {
 			rterror(_("strsplit: Not enough memory"));
 			return NULL;
 		}
-		strcpy(rtn[0], tmp);
+		memcpy(rtn[0], tmp, strlen(tmp) + 1);
 		rtdealloc(tmp);
 		return rtn;
 	}
 
-	token = strtok(tmp, delimiter);
+	token = strtok_r(tmp, delimiter, &saveptr);
 	while (token != NULL) {
 		if (*n < 1) {
 			rtn = (char **) rtalloc(sizeof(char *));
@@ -260,10 +261,10 @@ strsplit(const char *str, const char *delimiter, uint32_t *n) {
 			return NULL;
 		}
 
-		strcpy(rtn[*n], token);
+		memcpy(rtn[*n], token, strlen(token) + 1);
 		*n = *n + 1;
 
-		token = strtok(NULL, delimiter);
+		token = strtok_r(NULL, delimiter, &saveptr);
 	}
 
 	rtdealloc(tmp);
@@ -297,7 +298,8 @@ trim(const char *input) {
 		rterror(_("trim: Not enough memory"));
 		return NULL;
 	}
-	strncpy(rtn, input, len);
+	memcpy(rtn, input, len - 1);
+	rtn[len - 1] = '\0';
 
 	return rtn;
 }
@@ -329,8 +331,8 @@ chartrim(const char *input, char *remove) {
 		rterror(_("chartrim: Not enough memory"));
 		return NULL;
 	}
-	strncpy(rtn, input, len);
-	rtn[strlen(input) - offset] = '\0';
+	memcpy(rtn, input, len - 1);
+	rtn[len - 1] = '\0';
 
 	return rtn;
 }
@@ -535,7 +537,7 @@ copy_rastinfo(RASTERINFO *dst, RASTERINFO *src) {
 			rterror(_("copy_rastinfo: Not enough memory"));
 			return 0;
 		}
-		strcpy(dst->srs, src->srs);
+		memcpy(dst->srs, src->srs, strlen(src->srs) + 1);
 	}
 	memcpy(dst->dim, src->dim, sizeof(uint32_t) * 2);
 	dst->nband_count = src->nband_count;
@@ -1388,9 +1390,6 @@ build_overview(int idx, RTLOADERCFG *config, RASTERINFO *info, uint32_t ovx, STR
 
 	/* create VRT dataset */
 	hdsOv = VRTCreate(dimOv[0], dimOv[1]);
-	/*
-	GDALSetDescription(hdsOv, "/tmp/ov.vrt");
-	*/
 	GDALSetProjection(hdsOv, info->srs);
 
 	/* adjust scale */
@@ -1453,11 +1452,6 @@ build_overview(int idx, RTLOADERCFG *config, RASTERINFO *info, uint32_t ovx, STR
 			_tile_size[1] = tile_size[1];
 
 		for (xtile = 0; xtile < ntiles[0]; xtile++) {
-			/*
-			char fn[100];
-			sprintf(fn, "/tmp/ovtile%d.vrt", (ytile * ntiles[0]) + xtile);
-			*/
-
 			/* edge x tile */
 			if (!config->pad_tile && ntiles[0] > 1 && (xtile + 1) == ntiles[0])
 				_tile_size[0] = dimOv[0] - (xtile * tile_size[0]);
@@ -1604,7 +1598,7 @@ convert_raster(int idx, RTLOADERCFG *config, RASTERINFO *info, STRINGBUFFER *til
 			GDALClose(hdsSrc);
 			return 0;
 		}
-		strcpy(info->srs, pszProjectionRef);
+		memcpy(info->srs, pszProjectionRef, strlen(pszProjectionRef) + 1);
 
 		if (info->srid == SRID_UNKNOWN) {
 			OGRSpatialReferenceH hSRS = OSRNewSpatialReference(NULL);
@@ -1886,11 +1880,6 @@ convert_raster(int idx, RTLOADERCFG *config, RASTERINFO *info, STRINGBUFFER *til
 
 			for (xtile = 0; xtile < ntiles[0]; xtile++) {
 				int tile_is_nodata = !config->skip_nodataval_check;
-				/*
-				char fn[100];
-				sprintf(fn, "/tmp/tile%d.vrt", (ytile * ntiles[0]) + xtile);
-				*/
-
 				/* edge x tile */
 				if (!config->pad_tile && ntiles[0] > 1 && (xtile + 1) == ntiles[0])
 					_tile_size[0] = info->dim[0] - (xtile * info->tile_size[0]);
@@ -2483,7 +2472,7 @@ main(int argc, char **argv) {
 				rtdealloc_config(config);
 				exit(1);
 			}
-			strncpy(config->raster_column, argv[argit], len);
+			memcpy(config->raster_column, argv[argit], len);
 		}
 		/* filename column */
 		else if (CSEQUAL(argv[argit], "-F")) {
@@ -2498,7 +2487,7 @@ main(int argc, char **argv) {
 				rtdealloc_config(config);
 				exit(1);
 			}
-			strncpy(config->file_column_name, argv[argit], len);
+			memcpy(config->file_column_name, argv[argit], len);
 			config->file_column = 1;
 		}
 		/* overview factors */
@@ -2568,7 +2557,7 @@ main(int argc, char **argv) {
 				rtdealloc_config(config);
 				exit(1);
 			}
-			strncpy(config->tablespace, argv[argit], len);
+			memcpy(config->tablespace, argv[argit], len);
 		}
 		/* tablespace of new index */
 		else if (CSEQUAL(argv[argit], "-X") && argit < argc - 1) {
@@ -2579,7 +2568,7 @@ main(int argc, char **argv) {
 				rtdealloc_config(config);
 				exit(1);
 			}
-			strncpy(config->idx_tablespace, argv[argit], len);
+			memcpy(config->idx_tablespace, argv[argit], len);
 		}
 		/* nodata value */
 		else if (CSEQUAL(argv[argit], "-N") && argit < argc - 1) {
@@ -2663,7 +2652,7 @@ main(int argc, char **argv) {
 				rtdealloc_config(config);
 				exit(1);
 			}
-			strncpy(config->rt_file[config->rt_file_count - 1], argv[argit], len);
+			memcpy(config->rt_file[config->rt_file_count - 1], argv[argit], len);
 		}
 	}
 
@@ -2723,7 +2712,7 @@ main(int argc, char **argv) {
 					rtdealloc_config(config);
 					exit(1);
 				}
-				strncpy(config->table, config->rt_file[config->rt_file_count - 1], len);
+				memcpy(config->table, config->rt_file[config->rt_file_count - 1], len);
 			}
 
 			rtdealloc(config->rt_file[--(config->rt_file_count)]);
@@ -2768,7 +2757,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(file, config->rt_file[i]);
+		memcpy(file, config->rt_file[i], strlen(config->rt_file[i]) + 1);
 
 		for (ptr = file + strlen(file); ptr > file; ptr--) {
 			if (*ptr == '/' || *ptr == '\\') {
@@ -2783,7 +2772,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(config->rt_filename[i], ptr);
+		memcpy(config->rt_filename[i], ptr, strlen(ptr) + 1);
 		rtdealloc(file);
 	}
 
@@ -2802,7 +2791,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(file, config->rt_filename[0]);
+		memcpy(file, config->rt_filename[0], strlen(config->rt_filename[0]) + 1);
 
 		for (ptr = file + strlen(file); ptr > file; ptr--) {
 			if (*ptr == '.') {
@@ -2817,7 +2806,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(config->table, file);
+		memcpy(config->table, file, strlen(file) + 1);
 		rtdealloc(file);
 	}
 
@@ -2829,7 +2818,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(config->raster_column, "rast");
+		memcpy(config->raster_column, "rast", sizeof("rast"));
 	}
 
 	/* file_column_name not specified, default to "filename" */
@@ -2840,7 +2829,7 @@ main(int argc, char **argv) {
 			rtdealloc_config(config);
 			exit(1);
 		}
-		strcpy(config->file_column_name, "filename");
+		memcpy(config->file_column_name, "filename", sizeof("filename"));
 	}
 
 	/****************************************************************************

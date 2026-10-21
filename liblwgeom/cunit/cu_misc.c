@@ -279,7 +279,7 @@ static void test_optionlist(void)
 	char input[128];
 	memset(olist, 0, sizeof(olist));
 	// input string needs to be writeable because we are inserting nulls
-	strcpy(input, "key1=value1  key2=value2  ");
+	snprintf(input, sizeof(input), "%s", "key1=value1  key2=value2  ");
 	option_list_parse(input, olist);
 
 	value = option_list_search(olist, "key1");
@@ -294,18 +294,18 @@ static void test_optionlist(void)
 	CU_ASSERT_EQUAL(4, sz);
 
 	memset(olist, 0, sizeof(olist));
-	strcpy(input, "  ");
+	snprintf(input, sizeof(input), "%s", "  ");
 	option_list_parse(input, olist);
 	value = option_list_search(olist, "key1");
 	CU_ASSERT_EQUAL(NULL, value);
 
 	memset(olist, 0, sizeof(olist));
-	strcpy(input, "  key3= ");
+	snprintf(input, sizeof(input), "%s", "  key3= ");
 	option_list_parse(input, olist);
 	sz = option_list_length(olist);
 	CU_ASSERT_EQUAL(2, sz);
 
-	strcpy(input, "  key1=value1  key2='value2 value3'  ");
+	snprintf(input, sizeof(input), "%s", "  key1=value1  key2='value2 value3'  ");
 	memset(olist, 0, sizeof(olist));
 	option_list_gdal_parse(input, olist);
 	sz = option_list_length(olist);

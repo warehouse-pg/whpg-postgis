@@ -251,8 +251,7 @@ Datum RASTER_asGDALRaster(PG_FUNCTION_ARGS)
 				}
 
 				if (strlen(option)) {
-					options[j] = (char *) palloc(sizeof(char) * (strlen(option) + 1));
-					strcpy(options[j], option);
+					options[j] = pstrdup(option);
 					j++;
 				}
 			}

@@ -683,7 +683,7 @@ rt_raster_serialize(rt_raster raster) {
 			ptr += 1;
 
 			/* Write path */
-			strcpy((char*) ptr, band->data.offline.path);
+			memcpy(ptr, band->data.offline.path, strlen(band->data.offline.path) + 1);
 			ptr += strlen(band->data.offline.path) + 1;
 		}
 		else {

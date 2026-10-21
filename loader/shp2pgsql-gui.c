@@ -1545,8 +1545,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 		for (i = strlen(loader_file_config->shp_file); i >= 0
 			&& loader_file_config->shp_file[i - 1] != '\\' && loader_file_config->shp_file[i - 1] != '/'; i--);
 
-		progress_shapefile = malloc(strlen(loader_file_config->shp_file));
-		strcpy(progress_shapefile, &loader_file_config->shp_file[i]);
+		progress_shapefile = strdup(&loader_file_config->shp_file[i]);
 
 		/* Display the progress dialog */
 		snprintf(progress_text, GUIMSG_LINE_MAXLEN, _("Importing shapefile %s (%d records)..."), progress_shapefile, ShpLoaderGetRecordCount(state));
@@ -1775,6 +1774,7 @@ pgui_action_export(GtkWidget *widget, gpointer data)
 	gpointer gptr;
 	GtkTreeIter iter;
 	char *output_shapefile, *orig_shapefile;
+	size_t output_shapefile_len;
   char progress_text[GUIMSG_LINE_MAXLEN+1];
 	gchar *folder_path;
 
@@ -1844,10 +1844,9 @@ pgui_action_export(GtkWidget *widget, gpointer data)
 
 		/* Save the original shapefile name, then create a temporary version containing the full path */
 		orig_shapefile = dumper_table_config->shp_file;
-		output_shapefile = malloc(strlen(folder_path) + strlen(dumper_table_config->shp_file) + 2);
-		strcpy(output_shapefile, folder_path);
-		strcat(output_shapefile, G_DIR_SEPARATOR_S);
-		strcat(output_shapefile, dumper_table_config->shp_file);
+		output_shapefile_len = strlen(folder_path) + strlen(dumper_table_config->shp_file) + 2;
+		output_shapefile = malloc(output_shapefile_len);
+		snprintf(output_shapefile, output_shapefile_len, "%s%s%s", folder_path, G_DIR_SEPARATOR_S, dumper_table_config->shp_file);
 
 		dumper_table_config->shp_file = output_shapefile;
 
