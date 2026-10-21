@@ -3,6 +3,6 @@ comment = 'PostGIS tiger geocoder and reverse geocoder'
 default_version = '@EXTVERSION@'
 relocatable = false
 schema = tiger
-requires = 'postgis,fuzzystrmatch'
+requires = 'postgis,fuzzystrmatch,plpython3u'
 superuser= false
 no_relocate = 'postgis,fuzzystrmatch'

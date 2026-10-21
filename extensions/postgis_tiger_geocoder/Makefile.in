@@ -30,7 +30,7 @@ DATA_built = \
 	$(NULL)
 
 REGRESS = test-normalize_address test-upgrade
-REGRESS_OPTS = --load-extension=fuzzystrmatch --load-extension=postgis --load-extension=$(EXTENSION)
+REGRESS_OPTS = --load-extension=plpython3u --load-extension=fuzzystrmatch --load-extension=postgis --load-extension=$(EXTENSION)
 EXTSCHEMA_SUPPORTED = yes
 
 ## PostgreSQL < 16 doesn't understand new @extschema:extname@ syntax, so strip it

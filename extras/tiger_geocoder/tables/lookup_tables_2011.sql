@@ -2,7 +2,8 @@
 SELECT tiger.SetSearchPathForInstall('tiger');
 -- Create direction lookup table
 DROP TABLE IF EXISTS tiger.direction_lookup;
-CREATE TABLE direction_lookup (name VARCHAR(20) PRIMARY KEY, abbrev VARCHAR(3));
+CREATE TABLE direction_lookup (name VARCHAR(20) PRIMARY KEY, abbrev VARCHAR(3))
+DISTRIBUTED REPLICATED;
 INSERT INTO direction_lookup (name, abbrev) VALUES('WEST', 'W');
 INSERT INTO direction_lookup (name, abbrev) VALUES('W', 'W');
 INSERT INTO direction_lookup (name, abbrev) VALUES('SW', 'SW');
@@ -32,10 +33,11 @@ INSERT INTO direction_lookup (name, abbrev) VALUES('N', 'N');
 INSERT INTO direction_lookup (name, abbrev) VALUES('EAST', 'E');
 INSERT INTO direction_lookup (name, abbrev) VALUES('E', 'E');
 CREATE INDEX direction_lookup_abbrev_idx ON direction_lookup (abbrev);
+ANALYZE direction_lookup(name, abbrev);
 
 -- Create secondary unit lookup table
 DROP TABLE IF EXISTS tiger.secondary_unit_lookup;
-CREATE TABLE secondary_unit_lookup (name VARCHAR(20) PRIMARY KEY, abbrev VARCHAR(5));
+CREATE TABLE secondary_unit_lookup (name VARCHAR(20) PRIMARY KEY, abbrev VARCHAR(5)) DISTRIBUTED REPLICATED;
 INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('APARTMENT', 'APT');
 INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('APT', 'APT');
 INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('BASEMENT', 'BSMT');
@@ -76,10 +78,12 @@ INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('UNIT', 'UNIT');
 INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('UPPER', 'UPPR');
 INSERT INTO secondary_unit_lookup (name, abbrev) VALUES ('UPPR', 'UPPR');
 CREATE INDEX secondary_unit_lookup_abbrev_idx ON secondary_unit_lookup (abbrev);
+ANALYZE secondary_unit_lookup(name, abbrev);
 
 -- Create state lookup table
 DROP TABLE IF EXISTS tiger.state_lookup;
-CREATE TABLE state_lookup (st_code INTEGER PRIMARY KEY, name VARCHAR(40) UNIQUE, abbrev VARCHAR(3) UNIQUE, statefp char(2) UNIQUE);
+CREATE TABLE state_lookup (st_code INTEGER PRIMARY KEY, name VARCHAR(40), abbrev VARCHAR(3), statefp char(2), UNIQUE(st_code, name, abbrev, statefp))
+DISTRIBUTED REPLICATED;
 INSERT INTO state_lookup (name, abbrev, st_code) VALUES ('Alabama', 'AL', '01');
 INSERT INTO state_lookup (name, abbrev, st_code) VALUES ('Alaska', 'AK', '02');
 INSERT INTO state_lookup (name, abbrev, st_code) VALUES ('American Samoa', 'AS', '60');
@@ -141,10 +145,11 @@ INSERT INTO state_lookup (name, abbrev, st_code) VALUES ('Wisconsin', 'WI', '55'
 INSERT INTO state_lookup (name, abbrev, st_code) VALUES ('Wyoming', 'WY', '56');
 -- NOTE: fix later -- this is wrong for those - state code ones
 UPDATE state_lookup SET statefp = lpad(st_code::text,2,'0');
+ANALYZE state_lookup(st_code, name, abbrev, statefp);
 
 -- Create street type lookup table
 DROP TABLE IF EXISTS tiger.street_type_lookup;
-CREATE TABLE street_type_lookup (name VARCHAR(50) PRIMARY KEY, abbrev VARCHAR(50), is_hw boolean NOT NULL DEFAULT false);
+CREATE TABLE street_type_lookup (name VARCHAR(50) PRIMARY KEY, abbrev VARCHAR(50), is_hw boolean NOT NULL DEFAULT false) DISTRIBUTED REPLICATED;
 INSERT INTO street_type_lookup (name, abbrev) VALUES ('ALLEE', 'Aly');
 INSERT INTO street_type_lookup (name, abbrev) VALUES ('ALLEY', 'Aly');
 INSERT INTO street_type_lookup (name, abbrev) VALUES ('ALLY', 'Aly');
@@ -780,6 +785,8 @@ SELECT name, abbrev, true
            WHERE t.name NOT IN(SELECT name FROM street_type_lookup);
 CREATE INDEX street_type_lookup_abbrev_idx ON street_type_lookup (abbrev);
 
+ANALYZE street_type_lookup(name, abbrev, is_hw);
+
 -- Create place and countysub lookup tables
 DROP TABLE IF EXISTS tiger.place_lookup;
 CREATE TABLE place_lookup (
@@ -788,7 +795,7 @@ CREATE TABLE place_lookup (
     pl_code INTEGER,
     name    VARCHAR(90),
     PRIMARY KEY (st_code,pl_code)
-);
+) DISTRIBUTED REPLICATED;
 
 /**
 INSERT INTO place_lookup
@@ -812,7 +819,7 @@ CREATE TABLE county_lookup (
     co_code INTEGER,
     name    VARCHAR(90),
     PRIMARY KEY (st_code, co_code)
-);
+)DISTRIBUTED BY (st_code);
 
 /**
 INSERT INTO county_lookup
@@ -838,7 +845,7 @@ CREATE TABLE countysub_lookup (
     cs_code INTEGER,
     name    VARCHAR(90),
     PRIMARY KEY (st_code, co_code, cs_code)
-);
+)DISTRIBUTED REPLICATED;
 
 /**
 INSERT INTO countysub_lookup
@@ -870,7 +877,7 @@ CREATE TABLE zip_lookup_all (
     pl_code INTEGER,
     place   VARCHAR(90),
     cnt     INTEGER
-);
+)DISTRIBUTED REPLICATED;
 
 /** SET work_mem = '2GB';
 
@@ -921,8 +928,8 @@ CREATE TABLE zip_lookup_base (
     county  VARCHAR(90),
     city    VARCHAR(90),
     statefp varchar(2),
-    PRIMARY KEY (zip)
-);
+    PRIMARY KEY (zip,state, county, city, statefp)
+)DISTRIBUTED BY (zip);
 
 -- INSERT INTO zip_lookup_base
 -- Populate through magic
@@ -941,7 +948,7 @@ CREATE TABLE zip_lookup (
     place   VARCHAR(90),
     cnt     INTEGER,
     PRIMARY KEY (zip)
-);
+)DISTRIBUTED BY (zip);
 
 DROP TABLE IF EXISTS tiger.zcta500;
 /**
@@ -983,9 +990,9 @@ CREATE TABLE county
   intptlat character varying(11),
   intptlon character varying(12),
   the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269),
-  CONSTRAINT uidx_county_gid UNIQUE (gid),
-  CONSTRAINT pk_tiger_county PRIMARY KEY (cntyidfp)
-);
+  CONSTRAINT uidx_county_gid UNIQUE (gid,cntyidfp,statefp),
+  CONSTRAINT pk_tiger_county PRIMARY KEY (cntyidfp,statefp)
+)DISTRIBUTED BY (cntyidfp);
 CREATE INDEX idx_tiger_county ON county USING btree (countyfp);
 
 DROP TABLE IF EXISTS tiger.state;
@@ -1006,10 +1013,10 @@ CREATE TABLE state
   intptlat character varying(11),
   intptlon character varying(12),
   the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269),
-  CONSTRAINT uidx_tiger_state_stusps UNIQUE (stusps),
-  CONSTRAINT uidx_tiger_state_gid UNIQUE (gid),
+  CONSTRAINT uidx_tiger_state_stusps UNIQUE (stusps, statefp),
+  CONSTRAINT uidx_tiger_state_gid UNIQUE (gid, statefp),
   CONSTRAINT pk_tiger_state PRIMARY KEY (statefp)
-);
+)DISTRIBUTED BY (statefp);
 CREATE INDEX idx_tiger_state_the_geom_gist ON state USING gist(the_geom);
 
 DROP TABLE IF EXISTS tiger.place;
@@ -1034,8 +1041,8 @@ CREATE TABLE place
   intptlat character varying(11),
   intptlon character varying(12),
   the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269),
-  CONSTRAINT uidx_tiger_place_gid UNIQUE (gid)
-);
+  CONSTRAINT uidx_tiger_place_gid UNIQUE (gid, plcidfp)
+)DISTRIBUTED REPLICATED;
 CREATE INDEX tiger_place_the_geom_gist ON place USING gist(the_geom);
 
 DROP TABLE IF EXISTS tiger.zip_state;
@@ -1044,8 +1051,67 @@ CREATE TABLE zip_state
   zip character varying(5) NOT NULL,
   stusps character varying(2) NOT NULL,
   statefp character varying(2),
-  CONSTRAINT zip_state_pkey PRIMARY KEY (zip, stusps)
-);
+  CONSTRAINT zip_state_pkey PRIMARY KEY (zip, statefp, stusps)
+)DISTRIBUTED BY (zip)
+PARTITION BY LIST (statefp);
+
+CREATE TABLE list_zip_state_part_ak PARTITION OF zip_state FOR VALUES IN ('ak');
+CREATE TABLE list_zip_state_part_al PARTITION OF zip_state FOR VALUES IN ('al');
+CREATE TABLE list_zip_state_part_ar PARTITION OF zip_state FOR VALUES IN ('ar');
+CREATE TABLE list_zip_state_part_as PARTITION OF zip_state FOR VALUES IN ('as');
+CREATE TABLE list_zip_state_part_az PARTITION OF zip_state FOR VALUES IN ('az');
+CREATE TABLE list_zip_state_part_ca PARTITION OF zip_state FOR VALUES IN ('ca');
+CREATE TABLE list_zip_state_part_co PARTITION OF zip_state FOR VALUES IN ('co');
+CREATE TABLE list_zip_state_part_ct PARTITION OF zip_state FOR VALUES IN ('ct');
+CREATE TABLE list_zip_state_part_dc PARTITION OF zip_state FOR VALUES IN ('dc');
+CREATE TABLE list_zip_state_part_de PARTITION OF zip_state FOR VALUES IN ('de');
+CREATE TABLE list_zip_state_part_fl PARTITION OF zip_state FOR VALUES IN ('fl');
+CREATE TABLE list_zip_state_part_ga PARTITION OF zip_state FOR VALUES IN ('ga');
+CREATE TABLE list_zip_state_part_gu PARTITION OF zip_state FOR VALUES IN ('gu');
+CREATE TABLE list_zip_state_part_hi PARTITION OF zip_state FOR VALUES IN ('hi');
+CREATE TABLE list_zip_state_part_ia PARTITION OF zip_state FOR VALUES IN ('ia');
+CREATE TABLE list_zip_state_part_id PARTITION OF zip_state FOR VALUES IN ('id');
+CREATE TABLE list_zip_state_part_il PARTITION OF zip_state FOR VALUES IN ('il');
+CREATE TABLE list_zip_state_part_in PARTITION OF zip_state FOR VALUES IN ('in');
+CREATE TABLE list_zip_state_part_ks PARTITION OF zip_state FOR VALUES IN ('ks');
+CREATE TABLE list_zip_state_part_ky PARTITION OF zip_state FOR VALUES IN ('ky');
+CREATE TABLE list_zip_state_part_la PARTITION OF zip_state FOR VALUES IN ('la');
+CREATE TABLE list_zip_state_part_ma PARTITION OF zip_state FOR VALUES IN ('ma');
+CREATE TABLE list_zip_state_part_md PARTITION OF zip_state FOR VALUES IN ('md');
+CREATE TABLE list_zip_state_part_me PARTITION OF zip_state FOR VALUES IN ('me');
+CREATE TABLE list_zip_state_part_mi PARTITION OF zip_state FOR VALUES IN ('mi');
+CREATE TABLE list_zip_state_part_mn PARTITION OF zip_state FOR VALUES IN ('mn');
+CREATE TABLE list_zip_state_part_mo PARTITION OF zip_state FOR VALUES IN ('mo');
+CREATE TABLE list_zip_state_part_mp PARTITION OF zip_state FOR VALUES IN ('mp');
+CREATE TABLE list_zip_state_part_ms PARTITION OF zip_state FOR VALUES IN ('ms');
+CREATE TABLE list_zip_state_part_mt PARTITION OF zip_state FOR VALUES IN ('mt');
+CREATE TABLE list_zip_state_part_nc PARTITION OF zip_state FOR VALUES IN ('nc');
+CREATE TABLE list_zip_state_part_nd PARTITION OF zip_state FOR VALUES IN ('nd');
+CREATE TABLE list_zip_state_part_ne PARTITION OF zip_state FOR VALUES IN ('ne');
+CREATE TABLE list_zip_state_part_nh PARTITION OF zip_state FOR VALUES IN ('nh');
+CREATE TABLE list_zip_state_part_nj PARTITION OF zip_state FOR VALUES IN ('nj');
+CREATE TABLE list_zip_state_part_nm PARTITION OF zip_state FOR VALUES IN ('nm');
+CREATE TABLE list_zip_state_part_nv PARTITION OF zip_state FOR VALUES IN ('nv');
+CREATE TABLE list_zip_state_part_ny PARTITION OF zip_state FOR VALUES IN ('ny');
+CREATE TABLE list_zip_state_part_oh PARTITION OF zip_state FOR VALUES IN ('oh');
+CREATE TABLE list_zip_state_part_ok PARTITION OF zip_state FOR VALUES IN ('ok');
+CREATE TABLE list_zip_state_part_or PARTITION OF zip_state FOR VALUES IN ('or');
+CREATE TABLE list_zip_state_part_pa PARTITION OF zip_state FOR VALUES IN ('pa');
+CREATE TABLE list_zip_state_part_pr PARTITION OF zip_state FOR VALUES IN ('pr');
+CREATE TABLE list_zip_state_part_ri PARTITION OF zip_state FOR VALUES IN ('ri');
+CREATE TABLE list_zip_state_part_sc PARTITION OF zip_state FOR VALUES IN ('sc');
+CREATE TABLE list_zip_state_part_sd PARTITION OF zip_state FOR VALUES IN ('sd');
+CREATE TABLE list_zip_state_part_tn PARTITION OF zip_state FOR VALUES IN ('tn');
+CREATE TABLE list_zip_state_part_tx PARTITION OF zip_state FOR VALUES IN ('tx');
+CREATE TABLE list_zip_state_part_ut PARTITION OF zip_state FOR VALUES IN ('ut');
+CREATE TABLE list_zip_state_part_va PARTITION OF zip_state FOR VALUES IN ('va');
+CREATE TABLE list_zip_state_part_vi PARTITION OF zip_state FOR VALUES IN ('vi');
+CREATE TABLE list_zip_state_part_vt PARTITION OF zip_state FOR VALUES IN ('vt');
+CREATE TABLE list_zip_state_part_wa PARTITION OF zip_state FOR VALUES IN ('wa');
+CREATE TABLE list_zip_state_part_wi PARTITION OF zip_state FOR VALUES IN ('wi');
+CREATE TABLE list_zip_state_part_wv PARTITION OF zip_state FOR VALUES IN ('wv');
+CREATE TABLE list_zip_state_part_wy PARTITION OF zip_state FOR VALUES IN ('wy');
+CREATE TABLE list_zip_state_part_other PARTITION OF zip_state DEFAULT;
 
 DROP TABLE IF EXISTS tiger.zip_state_loc;
 CREATE TABLE zip_state_loc
@@ -1055,7 +1121,7 @@ CREATE TABLE zip_state_loc
   statefp character varying(2),
   place varchar(100),
   CONSTRAINT zip_state_loc_pkey PRIMARY KEY (zip, stusps, place)
-);
+)DISTRIBUTED BY (zip);
 
 DROP TABLE IF EXISTS tiger.cousub;
 CREATE TABLE cousub
@@ -1080,15 +1146,15 @@ CREATE TABLE cousub
   intptlat character varying(11),
   intptlon character varying(12),
   the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269),
-  CONSTRAINT uidx_cousub_gid UNIQUE (gid)
-);
+  CONSTRAINT uidx_cousub_gid UNIQUE (gid, cosbidfp)
+) DISTRIBUTED REPLICATED;
 
 CREATE INDEX tige_cousub_the_geom_gist ON cousub USING gist(the_geom);
 
 DROP TABLE IF EXISTS tiger.edges;
 CREATE TABLE edges
 (
-  gid SERIAL NOT NULL  PRIMARY KEY,
+  gid SERIAL NOT NULL,
   statefp character varying(2),
   countyfp character varying(3),
   tlid bigint,
@@ -1120,8 +1186,67 @@ CREATE TABLE edges
   offsetr character varying(1),
   tnidf numeric(10),
   tnidt numeric(10),
-  the_geom @extschema:postgis@.geometry(MULTILINESTRING,4269)
-);
+  the_geom @extschema:postgis@.geometry(MULTILINESTRING,4269),
+  CONSTRAINT pk_tiger_edges PRIMARY KEY (gid,statefp)
+) DISTRIBUTED BY (gid)
+PARTITION BY LIST (statefp);
+CREATE TABLE list_edges_part_ak PARTITION OF edges FOR VALUES IN ('ak');
+CREATE TABLE list_edges_part_al PARTITION OF edges FOR VALUES IN ('al');
+CREATE TABLE list_edges_part_ar PARTITION OF edges FOR VALUES IN ('ar');
+CREATE TABLE list_edges_part_as PARTITION OF edges FOR VALUES IN ('as');
+CREATE TABLE list_edges_part_az PARTITION OF edges FOR VALUES IN ('az');
+CREATE TABLE list_edges_part_ca PARTITION OF edges FOR VALUES IN ('ca');
+CREATE TABLE list_edges_part_co PARTITION OF edges FOR VALUES IN ('co');
+CREATE TABLE list_edges_part_ct PARTITION OF edges FOR VALUES IN ('ct');
+CREATE TABLE list_edges_part_dc PARTITION OF edges FOR VALUES IN ('dc');
+CREATE TABLE list_edges_part_de PARTITION OF edges FOR VALUES IN ('de');
+CREATE TABLE list_edges_part_fl PARTITION OF edges FOR VALUES IN ('fl');
+CREATE TABLE list_edges_part_ga PARTITION OF edges FOR VALUES IN ('ga');
+CREATE TABLE list_edges_part_gu PARTITION OF edges FOR VALUES IN ('gu');
+CREATE TABLE list_edges_part_hi PARTITION OF edges FOR VALUES IN ('hi');
+CREATE TABLE list_edges_part_ia PARTITION OF edges FOR VALUES IN ('ia');
+CREATE TABLE list_edges_part_id PARTITION OF edges FOR VALUES IN ('id');
+CREATE TABLE list_edges_part_il PARTITION OF edges FOR VALUES IN ('il');
+CREATE TABLE list_edges_part_in PARTITION OF edges FOR VALUES IN ('in');
+CREATE TABLE list_edges_part_ks PARTITION OF edges FOR VALUES IN ('ks');
+CREATE TABLE list_edges_part_ky PARTITION OF edges FOR VALUES IN ('ky');
+CREATE TABLE list_edges_part_la PARTITION OF edges FOR VALUES IN ('la');
+CREATE TABLE list_edges_part_ma PARTITION OF edges FOR VALUES IN ('ma');
+CREATE TABLE list_edges_part_md PARTITION OF edges FOR VALUES IN ('md');
+CREATE TABLE list_edges_part_me PARTITION OF edges FOR VALUES IN ('me');
+CREATE TABLE list_edges_part_mi PARTITION OF edges FOR VALUES IN ('mi');
+CREATE TABLE list_edges_part_mn PARTITION OF edges FOR VALUES IN ('mn');
+CREATE TABLE list_edges_part_mo PARTITION OF edges FOR VALUES IN ('mo');
+CREATE TABLE list_edges_part_mp PARTITION OF edges FOR VALUES IN ('mp');
+CREATE TABLE list_edges_part_ms PARTITION OF edges FOR VALUES IN ('ms');
+CREATE TABLE list_edges_part_mt PARTITION OF edges FOR VALUES IN ('mt');
+CREATE TABLE list_edges_part_nc PARTITION OF edges FOR VALUES IN ('nc');
+CREATE TABLE list_edges_part_nd PARTITION OF edges FOR VALUES IN ('nd');
+CREATE TABLE list_edges_part_ne PARTITION OF edges FOR VALUES IN ('ne');
+CREATE TABLE list_edges_part_nh PARTITION OF edges FOR VALUES IN ('nh');
+CREATE TABLE list_edges_part_nj PARTITION OF edges FOR VALUES IN ('nj');
+CREATE TABLE list_edges_part_nm PARTITION OF edges FOR VALUES IN ('nm');
+CREATE TABLE list_edges_part_nv PARTITION OF edges FOR VALUES IN ('nv');
+CREATE TABLE list_edges_part_ny PARTITION OF edges FOR VALUES IN ('ny');
+CREATE TABLE list_edges_part_oh PARTITION OF edges FOR VALUES IN ('oh');
+CREATE TABLE list_edges_part_ok PARTITION OF edges FOR VALUES IN ('ok');
+CREATE TABLE list_edges_part_or PARTITION OF edges FOR VALUES IN ('or');
+CREATE TABLE list_edges_part_pa PARTITION OF edges FOR VALUES IN ('pa');
+CREATE TABLE list_edges_part_pr PARTITION OF edges FOR VALUES IN ('pr');
+CREATE TABLE list_edges_part_ri PARTITION OF edges FOR VALUES IN ('ri');
+CREATE TABLE list_edges_part_sc PARTITION OF edges FOR VALUES IN ('sc');
+CREATE TABLE list_edges_part_sd PARTITION OF edges FOR VALUES IN ('sd');
+CREATE TABLE list_edges_part_tn PARTITION OF edges FOR VALUES IN ('tn');
+CREATE TABLE list_edges_part_tx PARTITION OF edges FOR VALUES IN ('tx');
+CREATE TABLE list_edges_part_ut PARTITION OF edges FOR VALUES IN ('ut');
+CREATE TABLE list_edges_part_va PARTITION OF edges FOR VALUES IN ('va');
+CREATE TABLE list_edges_part_vi PARTITION OF edges FOR VALUES IN ('vi');
+CREATE TABLE list_edges_part_vt PARTITION OF edges FOR VALUES IN ('vt');
+CREATE TABLE list_edges_part_wa PARTITION OF edges FOR VALUES IN ('wa');
+CREATE TABLE list_edges_part_wi PARTITION OF edges FOR VALUES IN ('wi');
+CREATE TABLE list_edges_part_wv PARTITION OF edges FOR VALUES IN ('wv');
+CREATE TABLE list_edges_part_wy PARTITION OF edges FOR VALUES IN ('wy');
+CREATE TABLE list_edges_part_other PARTITION OF edges DEFAULT;
 CREATE INDEX idx_edges_tlid ON edges USING btree(tlid);
 CREATE INDEX idx_tiger_edges_countyfp ON edges USING btree(countyfp);
 CREATE INDEX idx_tiger_edges_the_geom_gist ON edges USING gist(the_geom);
@@ -1154,7 +1279,7 @@ CREATE TABLE addrfeat
   offsetl character varying(1),
   offsetr character varying(1),
   the_geom @extschema:postgis@.geometry(LINESTRING,4329)
-);
+)DISTRIBUTED BY (gid);
 CREATE INDEX idx_addrfeat_geom_gist ON addrfeat USING gist(the_geom );
 CREATE INDEX idx_addrfeat_tlid ON addrfeat USING btree(tlid);
 CREATE INDEX idx_addrfeat_zipl ON addrfeat USING btree(zipl);
@@ -1163,7 +1288,7 @@ CREATE INDEX idx_addrfeat_zipr ON addrfeat USING btree(zipr);
 DROP TABLE IF EXISTS tiger.faces;
 CREATE TABLE faces
 (
-gid serial NOT NULL PRIMARY KEY,
+gid serial NOT NULL,
   tfid numeric(10,0),
   statefp00 varchar(2),
   countyfp00 varchar(3),
@@ -1232,8 +1357,67 @@ gid serial NOT NULL PRIMARY KEY,
   atotal double precision,
   intptlat varchar(11),
   intptlon varchar(12),
-  the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269)
-);
+  the_geom @extschema:postgis@.geometry(MULTIPOLYGON,4269),
+  CONSTRAINT pk_tiger_faces PRIMARY KEY (gid,tfid,statefp)
+)DISTRIBUTED BY (tfid)
+PARTITION BY LIST (statefp);
+CREATE TABLE list_faces_part_ak PARTITION OF faces FOR VALUES IN ('ak');
+CREATE TABLE list_faces_part_al PARTITION OF faces FOR VALUES IN ('al');
+CREATE TABLE list_faces_part_ar PARTITION OF faces FOR VALUES IN ('ar');
+CREATE TABLE list_faces_part_as PARTITION OF faces FOR VALUES IN ('as');
+CREATE TABLE list_faces_part_az PARTITION OF faces FOR VALUES IN ('az');
+CREATE TABLE list_faces_part_ca PARTITION OF faces FOR VALUES IN ('ca');
+CREATE TABLE list_faces_part_co PARTITION OF faces FOR VALUES IN ('co');
+CREATE TABLE list_faces_part_ct PARTITION OF faces FOR VALUES IN ('ct');
+CREATE TABLE list_faces_part_dc PARTITION OF faces FOR VALUES IN ('dc');
+CREATE TABLE list_faces_part_de PARTITION OF faces FOR VALUES IN ('de');
+CREATE TABLE list_faces_part_fl PARTITION OF faces FOR VALUES IN ('fl');
+CREATE TABLE list_faces_part_ga PARTITION OF faces FOR VALUES IN ('ga');
+CREATE TABLE list_faces_part_gu PARTITION OF faces FOR VALUES IN ('gu');
+CREATE TABLE list_faces_part_hi PARTITION OF faces FOR VALUES IN ('hi');
+CREATE TABLE list_faces_part_ia PARTITION OF faces FOR VALUES IN ('ia');
+CREATE TABLE list_faces_part_id PARTITION OF faces FOR VALUES IN ('id');
+CREATE TABLE list_faces_part_il PARTITION OF faces FOR VALUES IN ('il');
+CREATE TABLE list_faces_part_in PARTITION OF faces FOR VALUES IN ('in');
+CREATE TABLE list_faces_part_ks PARTITION OF faces FOR VALUES IN ('ks');
+CREATE TABLE list_faces_part_ky PARTITION OF faces FOR VALUES IN ('ky');
+CREATE TABLE list_faces_part_la PARTITION OF faces FOR VALUES IN ('la');
+CREATE TABLE list_faces_part_ma PARTITION OF faces FOR VALUES IN ('ma');
+CREATE TABLE list_faces_part_md PARTITION OF faces FOR VALUES IN ('md');
+CREATE TABLE list_faces_part_me PARTITION OF faces FOR VALUES IN ('me');
+CREATE TABLE list_faces_part_mi PARTITION OF faces FOR VALUES IN ('mi');
+CREATE TABLE list_faces_part_mn PARTITION OF faces FOR VALUES IN ('mn');
+CREATE TABLE list_faces_part_mo PARTITION OF faces FOR VALUES IN ('mo');
+CREATE TABLE list_faces_part_mp PARTITION OF faces FOR VALUES IN ('mp');
+CREATE TABLE list_faces_part_ms PARTITION OF faces FOR VALUES IN ('ms');
+CREATE TABLE list_faces_part_mt PARTITION OF faces FOR VALUES IN ('mt');
+CREATE TABLE list_faces_part_nc PARTITION OF faces FOR VALUES IN ('nc');
+CREATE TABLE list_faces_part_nd PARTITION OF faces FOR VALUES IN ('nd');
+CREATE TABLE list_faces_part_ne PARTITION OF faces FOR VALUES IN ('ne');
+CREATE TABLE list_faces_part_nh PARTITION OF faces FOR VALUES IN ('nh');
+CREATE TABLE list_faces_part_nj PARTITION OF faces FOR VALUES IN ('nj');
+CREATE TABLE list_faces_part_nm PARTITION OF faces FOR VALUES IN ('nm');
+CREATE TABLE list_faces_part_nv PARTITION OF faces FOR VALUES IN ('nv');
+CREATE TABLE list_faces_part_ny PARTITION OF faces FOR VALUES IN ('ny');
+CREATE TABLE list_faces_part_oh PARTITION OF faces FOR VALUES IN ('oh');
+CREATE TABLE list_faces_part_ok PARTITION OF faces FOR VALUES IN ('ok');
+CREATE TABLE list_faces_part_or PARTITION OF faces FOR VALUES IN ('or');
+CREATE TABLE list_faces_part_pa PARTITION OF faces FOR VALUES IN ('pa');
+CREATE TABLE list_faces_part_pr PARTITION OF faces FOR VALUES IN ('pr');
+CREATE TABLE list_faces_part_ri PARTITION OF faces FOR VALUES IN ('ri');
+CREATE TABLE list_faces_part_sc PARTITION OF faces FOR VALUES IN ('sc');
+CREATE TABLE list_faces_part_sd PARTITION OF faces FOR VALUES IN ('sd');
+CREATE TABLE list_faces_part_tn PARTITION OF faces FOR VALUES IN ('tn');
+CREATE TABLE list_faces_part_tx PARTITION OF faces FOR VALUES IN ('tx');
+CREATE TABLE list_faces_part_ut PARTITION OF faces FOR VALUES IN ('ut');
+CREATE TABLE list_faces_part_va PARTITION OF faces FOR VALUES IN ('va');
+CREATE TABLE list_faces_part_vi PARTITION OF faces FOR VALUES IN ('vi');
+CREATE TABLE list_faces_part_vt PARTITION OF faces FOR VALUES IN ('vt');
+CREATE TABLE list_faces_part_wa PARTITION OF faces FOR VALUES IN ('wa');
+CREATE TABLE list_faces_part_wi PARTITION OF faces FOR VALUES IN ('wi');
+CREATE TABLE list_faces_part_wv PARTITION OF faces FOR VALUES IN ('wv');
+CREATE TABLE list_faces_part_wy PARTITION OF faces FOR VALUES IN ('wy');
+CREATE TABLE list_faces_part_other PARTITION OF faces DEFAULT;
 CREATE INDEX idx_tiger_faces_tfid ON faces USING btree (tfid);
 CREATE INDEX idx_tiger_faces_countyfp ON faces USING btree(countyfp);
 CREATE INDEX tiger_faces_the_geom_gist ON faces USING gist(the_geom);
@@ -1260,9 +1444,67 @@ CREATE TABLE featnames
   linearid character varying(22),
   mtfcc character varying(5),
   paflag character varying(1),
-  CONSTRAINT featnames_pkey PRIMARY KEY (gid)
-);
-ALTER TABLE featnames ADD COLUMN statefp character varying(2);
+  statefp character varying(2),
+  CONSTRAINT featnames_pkey PRIMARY KEY (gid,tlid,statefp)
+)DISTRIBUTED BY (tlid)
+PARTITION BY LIST (statefp);
+CREATE TABLE list_featnames_part_ak PARTITION OF featnames FOR VALUES IN ('ak');
+CREATE TABLE list_featnames_part_al PARTITION OF featnames FOR VALUES IN ('al');
+CREATE TABLE list_featnames_part_ar PARTITION OF featnames FOR VALUES IN ('ar');
+CREATE TABLE list_featnames_part_as PARTITION OF featnames FOR VALUES IN ('as');
+CREATE TABLE list_featnames_part_az PARTITION OF featnames FOR VALUES IN ('az');
+CREATE TABLE list_featnames_part_ca PARTITION OF featnames FOR VALUES IN ('ca');
+CREATE TABLE list_featnames_part_co PARTITION OF featnames FOR VALUES IN ('co');
+CREATE TABLE list_featnames_part_ct PARTITION OF featnames FOR VALUES IN ('ct');
+CREATE TABLE list_featnames_part_dc PARTITION OF featnames FOR VALUES IN ('dc');
+CREATE TABLE list_featnames_part_de PARTITION OF featnames FOR VALUES IN ('de');
+CREATE TABLE list_featnames_part_fl PARTITION OF featnames FOR VALUES IN ('fl');
+CREATE TABLE list_featnames_part_ga PARTITION OF featnames FOR VALUES IN ('ga');
+CREATE TABLE list_featnames_part_gu PARTITION OF featnames FOR VALUES IN ('gu');
+CREATE TABLE list_featnames_part_hi PARTITION OF featnames FOR VALUES IN ('hi');
+CREATE TABLE list_featnames_part_ia PARTITION OF featnames FOR VALUES IN ('ia');
+CREATE TABLE list_featnames_part_id PARTITION OF featnames FOR VALUES IN ('id');
+CREATE TABLE list_featnames_part_il PARTITION OF featnames FOR VALUES IN ('il');
+CREATE TABLE list_featnames_part_in PARTITION OF featnames FOR VALUES IN ('in');
+CREATE TABLE list_featnames_part_ks PARTITION OF featnames FOR VALUES IN ('ks');
+CREATE TABLE list_featnames_part_ky PARTITION OF featnames FOR VALUES IN ('ky');
+CREATE TABLE list_featnames_part_la PARTITION OF featnames FOR VALUES IN ('la');
+CREATE TABLE list_featnames_part_ma PARTITION OF featnames FOR VALUES IN ('ma');
+CREATE TABLE list_featnames_part_md PARTITION OF featnames FOR VALUES IN ('md');
+CREATE TABLE list_featnames_part_me PARTITION OF featnames FOR VALUES IN ('me');
+CREATE TABLE list_featnames_part_mi PARTITION OF featnames FOR VALUES IN ('mi');
+CREATE TABLE list_featnames_part_mn PARTITION OF featnames FOR VALUES IN ('mn');
+CREATE TABLE list_featnames_part_mo PARTITION OF featnames FOR VALUES IN ('mo');
+CREATE TABLE list_featnames_part_mp PARTITION OF featnames FOR VALUES IN ('mp');
+CREATE TABLE list_featnames_part_ms PARTITION OF featnames FOR VALUES IN ('ms');
+CREATE TABLE list_featnames_part_mt PARTITION OF featnames FOR VALUES IN ('mt');
+CREATE TABLE list_featnames_part_nc PARTITION OF featnames FOR VALUES IN ('nc');
+CREATE TABLE list_featnames_part_nd PARTITION OF featnames FOR VALUES IN ('nd');
+CREATE TABLE list_featnames_part_ne PARTITION OF featnames FOR VALUES IN ('ne');
+CREATE TABLE list_featnames_part_nh PARTITION OF featnames FOR VALUES IN ('nh');
+CREATE TABLE list_featnames_part_nj PARTITION OF featnames FOR VALUES IN ('nj');
+CREATE TABLE list_featnames_part_nm PARTITION OF featnames FOR VALUES IN ('nm');
+CREATE TABLE list_featnames_part_nv PARTITION OF featnames FOR VALUES IN ('nv');
+CREATE TABLE list_featnames_part_ny PARTITION OF featnames FOR VALUES IN ('ny');
+CREATE TABLE list_featnames_part_oh PARTITION OF featnames FOR VALUES IN ('oh');
+CREATE TABLE list_featnames_part_ok PARTITION OF featnames FOR VALUES IN ('ok');
+CREATE TABLE list_featnames_part_or PARTITION OF featnames FOR VALUES IN ('or');
+CREATE TABLE list_featnames_part_pa PARTITION OF featnames FOR VALUES IN ('pa');
+CREATE TABLE list_featnames_part_pr PARTITION OF featnames FOR VALUES IN ('pr');
+CREATE TABLE list_featnames_part_ri PARTITION OF featnames FOR VALUES IN ('ri');
+CREATE TABLE list_featnames_part_sc PARTITION OF featnames FOR VALUES IN ('sc');
+CREATE TABLE list_featnames_part_sd PARTITION OF featnames FOR VALUES IN ('sd');
+CREATE TABLE list_featnames_part_tn PARTITION OF featnames FOR VALUES IN ('tn');
+CREATE TABLE list_featnames_part_tx PARTITION OF featnames FOR VALUES IN ('tx');
+CREATE TABLE list_featnames_part_ut PARTITION OF featnames FOR VALUES IN ('ut');
+CREATE TABLE list_featnames_part_va PARTITION OF featnames FOR VALUES IN ('va');
+CREATE TABLE list_featnames_part_vi PARTITION OF featnames FOR VALUES IN ('vi');
+CREATE TABLE list_featnames_part_vt PARTITION OF featnames FOR VALUES IN ('vt');
+CREATE TABLE list_featnames_part_wa PARTITION OF featnames FOR VALUES IN ('wa');
+CREATE TABLE list_featnames_part_wi PARTITION OF featnames FOR VALUES IN ('wi');
+CREATE TABLE list_featnames_part_wv PARTITION OF featnames FOR VALUES IN ('wv');
+CREATE TABLE list_featnames_part_wy PARTITION OF featnames FOR VALUES IN ('wy');
+CREATE TABLE list_featnames_part_other PARTITION OF featnames DEFAULT;
 CREATE INDEX idx_tiger_featnames_snd_name ON featnames USING btree ( @extschema:fuzzystrmatch@.soundex(name) );
 CREATE INDEX idx_tiger_featnames_lname ON featnames USING btree (lower(name));
 CREATE INDEX idx_tiger_featnames_tlid_statefp ON featnames USING btree (tlid,statefp);
@@ -1282,9 +1524,68 @@ CREATE TABLE addr
   toarmid integer,
   arid character varying(22),
   mtfcc character varying(5),
-  CONSTRAINT addr_pkey PRIMARY KEY (gid)
-);
-ALTER TABLE addr ADD COLUMN statefp character varying(2);
+  statefp character varying(2),
+  CONSTRAINT addr_pkey PRIMARY KEY (gid,tlid,statefp)
+)DISTRIBUTED BY (tlid)
+PARTITION BY LIST (statefp);
+
+CREATE TABLE list_addr_part_ak PARTITION OF addr FOR VALUES IN ('ak');
+CREATE TABLE list_addr_part_al PARTITION OF addr FOR VALUES IN ('al');
+CREATE TABLE list_addr_part_ar PARTITION OF addr FOR VALUES IN ('ar');
+CREATE TABLE list_addr_part_as PARTITION OF addr FOR VALUES IN ('as');
+CREATE TABLE list_addr_part_az PARTITION OF addr FOR VALUES IN ('az');
+CREATE TABLE list_addr_part_ca PARTITION OF addr FOR VALUES IN ('ca');
+CREATE TABLE list_addr_part_co PARTITION OF addr FOR VALUES IN ('co');
+CREATE TABLE list_addr_part_ct PARTITION OF addr FOR VALUES IN ('ct');
+CREATE TABLE list_addr_part_dc PARTITION OF addr FOR VALUES IN ('dc');
+CREATE TABLE list_addr_part_de PARTITION OF addr FOR VALUES IN ('de');
+CREATE TABLE list_addr_part_fl PARTITION OF addr FOR VALUES IN ('fl');
+CREATE TABLE list_addr_part_ga PARTITION OF addr FOR VALUES IN ('ga');
+CREATE TABLE list_addr_part_gu PARTITION OF addr FOR VALUES IN ('gu');
+CREATE TABLE list_addr_part_hi PARTITION OF addr FOR VALUES IN ('hi');
+CREATE TABLE list_addr_part_ia PARTITION OF addr FOR VALUES IN ('ia');
+CREATE TABLE list_addr_part_id PARTITION OF addr FOR VALUES IN ('id');
+CREATE TABLE list_addr_part_il PARTITION OF addr FOR VALUES IN ('il');
+CREATE TABLE list_addr_part_in PARTITION OF addr FOR VALUES IN ('in');
+CREATE TABLE list_addr_part_ks PARTITION OF addr FOR VALUES IN ('ks');
+CREATE TABLE list_addr_part_ky PARTITION OF addr FOR VALUES IN ('ky');
+CREATE TABLE list_addr_part_la PARTITION OF addr FOR VALUES IN ('la');
+CREATE TABLE list_addr_part_ma PARTITION OF addr FOR VALUES IN ('ma');
+CREATE TABLE list_addr_part_md PARTITION OF addr FOR VALUES IN ('md');
+CREATE TABLE list_addr_part_me PARTITION OF addr FOR VALUES IN ('me');
+CREATE TABLE list_addr_part_mi PARTITION OF addr FOR VALUES IN ('mi');
+CREATE TABLE list_addr_part_mn PARTITION OF addr FOR VALUES IN ('mn');
+CREATE TABLE list_addr_part_mo PARTITION OF addr FOR VALUES IN ('mo');
+CREATE TABLE list_addr_part_mp PARTITION OF addr FOR VALUES IN ('mp');
+CREATE TABLE list_addr_part_ms PARTITION OF addr FOR VALUES IN ('ms');
+CREATE TABLE list_addr_part_mt PARTITION OF addr FOR VALUES IN ('mt');
+CREATE TABLE list_addr_part_nc PARTITION OF addr FOR VALUES IN ('nc');
+CREATE TABLE list_addr_part_nd PARTITION OF addr FOR VALUES IN ('nd');
+CREATE TABLE list_addr_part_ne PARTITION OF addr FOR VALUES IN ('ne');
+CREATE TABLE list_addr_part_nh PARTITION OF addr FOR VALUES IN ('nh');
+CREATE TABLE list_addr_part_nj PARTITION OF addr FOR VALUES IN ('nj');
+CREATE TABLE list_addr_part_nm PARTITION OF addr FOR VALUES IN ('nm');
+CREATE TABLE list_addr_part_nv PARTITION OF addr FOR VALUES IN ('nv');
+CREATE TABLE list_addr_part_ny PARTITION OF addr FOR VALUES IN ('ny');
+CREATE TABLE list_addr_part_oh PARTITION OF addr FOR VALUES IN ('oh');
+CREATE TABLE list_addr_part_ok PARTITION OF addr FOR VALUES IN ('ok');
+CREATE TABLE list_addr_part_or PARTITION OF addr FOR VALUES IN ('or');
+CREATE TABLE list_addr_part_pa PARTITION OF addr FOR VALUES IN ('pa');
+CREATE TABLE list_addr_part_pr PARTITION OF addr FOR VALUES IN ('pr');
+CREATE TABLE list_addr_part_ri PARTITION OF addr FOR VALUES IN ('ri');
+CREATE TABLE list_addr_part_sc PARTITION OF addr FOR VALUES IN ('sc');
+CREATE TABLE list_addr_part_sd PARTITION OF addr FOR VALUES IN ('sd');
+CREATE TABLE list_addr_part_tn PARTITION OF addr FOR VALUES IN ('tn');
+CREATE TABLE list_addr_part_tx PARTITION OF addr FOR VALUES IN ('tx');
+CREATE TABLE list_addr_part_ut PARTITION OF addr FOR VALUES IN ('ut');
+CREATE TABLE list_addr_part_va PARTITION OF addr FOR VALUES IN ('va');
+CREATE TABLE list_addr_part_vi PARTITION OF addr FOR VALUES IN ('vi');
+CREATE TABLE list_addr_part_vt PARTITION OF addr FOR VALUES IN ('vt');
+CREATE TABLE list_addr_part_wa PARTITION OF addr FOR VALUES IN ('wa');
+CREATE TABLE list_addr_part_wi PARTITION OF addr FOR VALUES IN ('wi');
+CREATE TABLE list_addr_part_wv PARTITION OF addr FOR VALUES IN ('wv');
+CREATE TABLE list_addr_part_wy PARTITION OF addr FOR VALUES IN ('wy');
+CREATE TABLE list_addr_part_other PARTITION OF addr DEFAULT;
 
 CREATE INDEX idx_tiger_addr_tlid_statefp ON addr USING btree(tlid,statefp);
 CREATE INDEX idx_tiger_addr_zip ON addr USING btree (zip);
@@ -1305,4 +1606,4 @@ CREATE TABLE zcta5
   partflg character varying(1),
   the_geom @extschema:postgis@.geometry(MULTIPOLYGON, 4269),
   CONSTRAINT pk_tiger_zcta5_zcta5ce PRIMARY KEY (zcta5ce,statefp)
- );
+ )DISTRIBUTED BY (zcta5ce);

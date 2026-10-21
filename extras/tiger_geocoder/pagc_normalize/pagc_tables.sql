@@ -9,21 +9,21 @@ DECLARE var_temp text;
 BEGIN
 	var_temp := tiger.SetSearchPathForInstall('tiger'); /** set set search path to have tiger in front **/
 	IF NOT EXISTS(SELECT table_name FROM information_schema.columns WHERE table_schema OPERATOR(pg_catalog.=) 'tiger' AND table_name OPERATOR(pg_catalog.=) 'pagc_gaz')  THEN
-		CREATE TABLE pagc_gaz (id serial NOT NULL primary key ,seq integer ,word text, stdword text, token integer,is_custom boolean NOT NULL default true);
+		CREATE TABLE pagc_gaz (id serial NOT NULL primary key ,seq integer ,word text, stdword text, token integer,is_custom boolean NOT NULL default true) DISTRIBUTED REPLICATED;
 		GRANT SELECT ON pagc_gaz TO public;
 	ELSE
 		-- Insist on invoking Postgres logic of owning table by extension. This prevent attacks like CVE-2022-2625.
 		CREATE TABLE IF NOT EXISTS pagc_gaz (id serial NOT NULL primary key ,seq integer ,word text, stdword text, token integer,is_custom boolean NOT NULL default true);
 	END IF;
 	IF NOT EXISTS(SELECT table_name FROM information_schema.columns WHERE table_schema OPERATOR(pg_catalog.=) 'tiger' AND table_name OPERATOR(pg_catalog.=) 'pagc_lex')  THEN
-		CREATE TABLE pagc_lex (id serial NOT NULL primary key,seq integer,word text,stdword text,token integer,is_custom boolean NOT NULL default true);
+		CREATE TABLE pagc_lex (id serial NOT NULL primary key,seq integer,word text,stdword text,token integer,is_custom boolean NOT NULL default true) DISTRIBUTED REPLICATED;
 		GRANT SELECT ON pagc_lex TO public;
 	ELSE
 		-- Same as above.
 		CREATE TABLE IF NOT EXISTS pagc_lex (id serial NOT NULL primary key,seq integer,word text,stdword text,token integer,is_custom boolean NOT NULL default true);
 	END IF;
 	IF NOT EXISTS(SELECT table_name FROM information_schema.columns WHERE table_schema OPERATOR(pg_catalog.=) 'tiger' AND table_name OPERATOR(pg_catalog.=) 'pagc_rules')  THEN
-		CREATE TABLE pagc_rules (id serial NOT NULL primary key,rule text, is_custom boolean DEFAULT true);
+		CREATE TABLE pagc_rules (id serial NOT NULL primary key,rule text, is_custom boolean DEFAULT true) DISTRIBUTED REPLICATED;
 		GRANT SELECT ON pagc_rules TO public;
 	ELSE
 		-- Same as above.
