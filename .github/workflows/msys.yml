@@ -21,9 +21,9 @@ jobs:
     steps:
       # see https://github.com/msys2/setup-msys2
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
     - name: '${{ matrix.icon }} Setup MSYS2'
-      uses: msys2/setup-msys2@v2
+      uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
       with:
         msystem: ${{ matrix.sys }}
         update: true
