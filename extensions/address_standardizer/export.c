@@ -416,17 +416,20 @@ static void _copy_standard_( STAND_PARAM *__stand_param__ , SYMB output_sym , in
          other. Not much you can do with implicit. Better a generic
          identifier than nothing at all --*/
 
-		strcpy( __dest_buf__ , "# " ) ; /* -- reconsider this -- */
+		BLANK_STRING( __dest_buf__ ) ; /* -- reconsider this -- */
+		append_string_to_max( __dest_buf__ , "# " , MAXFLDLEN ) ;
 		append_string_to_max( __dest_buf__ , __stan_str__ , MAXFLDLEN ) ;
 	}
 	else if ( output_sym == BOXT )
 	{
-		strcpy( __dest_buf__, "BOX " ) ;
+		BLANK_STRING( __dest_buf__ ) ;
+		append_string_to_max( __dest_buf__ , "BOX " , MAXFLDLEN ) ;
 		append_string_to_max( __dest_buf__ , __stan_str__ ,MAXFLDLEN ) ;
 	}
 	else
 	{
-		strcpy( __dest_buf__ , __stan_str__ ) ;
+		BLANK_STRING( __dest_buf__ ) ;
+		append_string_to_max( __dest_buf__ , __stan_str__ , MAXFLDLEN ) ;
 	}
 }
 

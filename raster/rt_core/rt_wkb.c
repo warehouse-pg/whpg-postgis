@@ -646,7 +646,7 @@ rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t *wkbsize) {
 			ptr += 1;
 
 			/* Write path */
-			strcpy((char*) ptr, band->data.offline.path);
+			memcpy(ptr, band->data.offline.path, strlen(band->data.offline.path) + 1);
 			ptr += strlen(band->data.offline.path) + 1;
 		}
 		else {

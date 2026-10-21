@@ -686,6 +686,7 @@ static int load_lex(LEXICON *lex, char *tab)
     double elapsed;
 #endif
     char *sql;
+    size_t sqllen;
 
     int ntuples;
     int total_tuples = 0;
@@ -708,10 +709,9 @@ static int load_lex(LEXICON *lex, char *tab)
         elog(NOTICE, "load_lex: lex and gaz table names may only be alphanum and '.\"_' characters (%s)", tab);
         return -1;
     }
-    sql = SPI_palloc(strlen(tab)+65);
-    strcpy(sql, "select seq, word, stdword, token from ");
-    strcat(sql, tab);
-    strcat(sql, " order by id ");
+    sqllen = strlen(tab)+65;
+    sql = SPI_palloc(sqllen);
+    snprintf(sql, sqllen, "select seq, word, stdword, token from %s order by id ", tab);
 
     /* get the sql for the lexicon records and prepare the query */
     SPIplan = SPI_prepare(sql, 0, NULL);
@@ -810,6 +810,7 @@ static int load_rules(RULES *rules, char *tab)
     double elapsed;
 #endif
     char *sql;
+    size_t sqllen;
 
     int rule_arr[MAX_RULE_LENGTH];
 
@@ -831,10 +832,9 @@ static int load_rules(RULES *rules, char *tab)
         elog(NOTICE, "load_rules: rules table name may only be alphanum and '.\"_' characters (%s)", tab);
         return -1;
     }
-    sql = SPI_palloc(strlen(tab)+35);
-    strcpy(sql, "select rule from ");
-    strcat(sql, tab);
-    strcat(sql, " order by id ");
+    sqllen = strlen(tab)+35;
+    sql = SPI_palloc(sqllen);
+    snprintf(sql, sqllen, "select rule from %s order by id ", tab);
 
     /* get the sql for the lexicon records and prepare the query */
     SPIplan = SPI_prepare(sql, 0, NULL);

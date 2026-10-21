@@ -126,8 +126,7 @@ Datum BOX3D_out(PG_FUNCTION_ARGS)
 
 	if (bbox == NULL)
 	{
-		result = palloc(5);
-		strcat(result, "NULL");
+		result = pstrdup("NULL");
 		PG_RETURN_CSTRING(result);
 	}
 

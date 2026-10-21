@@ -25,6 +25,7 @@
 
 #include "lwgeom_log.h"
 #include "liblwgeom.h"
+#include "liblwgeom_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -110,9 +111,9 @@ lwcollection_summary(LWCOLLECTION *col, int offset)
 		result = lwrealloc(result, size);
 
 		LWDEBUGF(4, "Reallocated %d bytes for result", size);
-		if ( i > 0 ) strcat(result,nl);
+		if ( i > 0 ) lwstr_append(result, size, nl, 1);
 
-		strcat(result, tmp);
+		lwstr_append(result, size, tmp, strlen(tmp));
 		lwfree(tmp);
 	}
 
@@ -145,8 +146,8 @@ lwpoly_summary(LWPOLY *poly, int offset)
 	{
 		sprintf(tmp,"%s   ring %i has %i points",
 		        pad, i, poly->rings[i]->npoints);
-		if ( i > 0 ) strcat(result,nl);
-		strcat(result,tmp);
+		if ( i > 0 ) lwstr_append(result, size, nl, 1);
+		lwstr_append(result, size, tmp, strlen(tmp));
 	}
 
 	LWDEBUG(3, "lwpoly_summary returning");

@@ -184,7 +184,7 @@ trim(char* str)
 	while (start<end && isspace(*(end-1))) end--;
 	len = end-start;
 	result = malloc( len+1 );
-	strncpy(result, start, len);
+	memcpy(result, start, len);
 	result[len] = '\0';
 	return result;
 }

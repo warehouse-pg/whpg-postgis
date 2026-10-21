@@ -241,7 +241,7 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 			else
 			{
 				/* Not reading anything, just pass through the '.' */
-				strncat(pieces[current_piece], &next_char, 1);
+				lwstr_append(pieces[current_piece], WORK_SIZE, &next_char, 1);
 			}
 			break;
 		default:
@@ -291,7 +291,7 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 				}
 			}
 			/* Copy all the character's bytes into the current piece. */
-			strncat(pieces[current_piece], &(format[index]), multibyte_char_width);
+			lwstr_append(pieces[current_piece], WORK_SIZE, &(format[index]), multibyte_char_width);
 			/* Now increment index past the rest of those bytes. */
 			index += multibyte_char_width - 1;
 			break;
@@ -340,7 +340,7 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 	/* Handle the compass direction.  If not using compass dir, display degrees as a positive/negative number. */
 	if (compass_dir_piece >= 0)
 	{
-		strcpy(pieces[compass_dir_piece], is_negative ? neg_dir_symbol : pos_dir_symbol);
+		snprintf(pieces[compass_dir_piece], WORK_SIZE, "%s", is_negative ? neg_dir_symbol : pos_dir_symbol);
 	}
 	else if (is_negative)
 	{
@@ -381,10 +381,9 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 	memset(result, 0, format_length + WORK_SIZE);
 
 	/* Append all the pieces together. There may be less than 9, but in that case the rest will be blank. */
-	strcpy(result, pieces[0]);
-	for (index = 1; index < NUM_PIECES; index++)
+	for (index = 0; index < NUM_PIECES; index++)
 	{
-		strcat(result, pieces[index]);
+		lwstr_append(result, format_length + WORK_SIZE, pieces[index], WORK_SIZE);
 	}
 
 	return result;

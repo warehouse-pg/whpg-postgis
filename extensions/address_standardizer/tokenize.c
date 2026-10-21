@@ -912,8 +912,8 @@ static int set_lexeme( STAND_PARAM *s_p ,
                 FALSE ) ;
    }
    L = s_p -> lex_vector + n ;
-   strcpy( L -> Text ,
-           text ) ;
+   snprintf( L -> Text , MAXTEXT , "%s" ,
+             text ) ;
    L -> DefList = start_def ;
    L -> StartMorph = Start ;
    L -> EndMorph = End ;
