@@ -236,3 +236,6 @@ deps/flatgeobuf/Makefile
 
 # MacOS
 .DS_Store
+
+# WHPG19 validation runner output
+whpg/validation-logs/
