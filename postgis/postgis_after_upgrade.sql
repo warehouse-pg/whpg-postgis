@@ -258,6 +258,14 @@ SELECT _postgis_drop_function_by_signature('LongTransactionsEnabled()', '3.5.0')
 SELECT _postgis_drop_function_by_signature('DisableLongTransactions()', '3.5.0');
 
 
+-- WHPG: everything from here to the end of this script is direct DML on
+-- system catalogs (pg_operator, pg_proc, pg_amproc, pg_depend). GPDB
+-- refuses that without allow_system_table_mods, even for a superuser:
+--   ERROR:  permission denied: "pg_operator" is a system catalog
+-- whpg7 wraps this section the same way; the #5564 blocks below would
+-- otherwise fail silently inside their EXCEPTION handlers.
+set allow_system_table_mods=true;
+
 -- #4394
 update pg_operator set oprcanhash = true, oprcanmerge = true where oprname = '=' and oprcode = 'geometry_eq'::regproc;
 
@@ -505,3 +513,6 @@ BEGIN
 END;
 
 $$;
+
+-- WHPG: end of the catalog fix-up section opened above
+reset allow_system_table_mods;
