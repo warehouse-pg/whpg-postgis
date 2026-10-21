@@ -650,7 +650,7 @@ set PGBIN=C:\projects\pg\pg91win\bin\
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+rem Put the password in %APPDATA%\postgresql\pgpass.conf instead of setting PGPASSWORD
 set PGDATABASE=tiger_postgis20
 set PSQL="%PGBIN%psql"
 set SHP2PGSQL="%PGBIN%shp2pgsql"
@@ -679,7 +679,7 @@ export PGBIN=/usr/pgsql-9.0/bin
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Put the password in ~/.pgpass (chmod 600) instead of exporting PGPASSWORD
 export PGDATABASE=geocoder
 PSQL=${PGBIN}/psql
 SHP2PGSQL=${PGBIN}/shp2pgsql
@@ -763,7 +763,7 @@ set PGBIN=C:\Program Files\PostgreSQL\9.4\bin\
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+rem Put the password in %APPDATA%\postgresql\pgpass.conf instead of setting PGPASSWORD
 set PGDATABASE=geocoder
 set PSQL="%PGBIN%psql"
 set SHP2PGSQL="%PGBIN%shp2pgsql"
@@ -785,7 +785,7 @@ export PGBIN=/usr/lib/postgresql/9.4/bin
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Put the password in ~/.pgpass (chmod 600) instead of exporting PGPASSWORD
 export PGDATABASE=geocoder
 PSQL=${PGBIN}/psql
 SHP2PGSQL=${PGBIN}/shp2pgsql
