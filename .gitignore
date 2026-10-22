@@ -239,3 +239,4 @@ deps/flatgeobuf/Makefile
 
 # WHPG19 validation runner output
 whpg/validation-logs/
+graphify-out/
