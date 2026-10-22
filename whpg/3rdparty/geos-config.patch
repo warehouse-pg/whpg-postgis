@@ -1,7 +1,7 @@
-65c65,68
-<       echo -L${libdir}
+50c50,53
+<       echo -L${libdir} -lgeos_c
 ---
->       # Postgis calling '--ldflags' for link params. However the original
+>       # Postgis calling '--clibs' for link params. However the original
 >       # one doesn't work with static link.
 >       # echo -L${libdir}
 >       echo -L${libdir} -lgeos_c -lgeos -lm -lstdc++
