@@ -1,0 +1,32 @@
+Build GDAL 3.6.4 against libxml2 >= 2.12, where xmlGetLastError() returns
+const xmlError* and xmlStructuredErrorFunc takes const xmlError*.
+Backport of the upstream fix shipped in GDAL 3.8.
+
+--- a/port/cpl_xml_validate.cpp
++++ b/port/cpl_xml_validate.cpp
+@@ -914,7 +914,11 @@ static void CPLLibXMLWarningErrorCallback(void *ctx, const char *msg, ...)
+ 
+     if (strstr(pszStr, "since this namespace was already imported") == nullptr)
+     {
++#if LIBXML_VERSION >= 21200
++        const xmlError *pErrorPtr = xmlGetLastError();
++#else
+         xmlErrorPtr pErrorPtr = xmlGetLastError();
++#endif
+         const char *pszFilename = static_cast<char *>(ctx);
+         char *pszStrDup = CPLStrdup(pszStr);
+         int nLen = static_cast<int>(strlen(pszStrDup));
+--- a/gcore/gdaljp2metadatagenerator.cpp
++++ b/gcore/gdaljp2metadatagenerator.cpp
+@@ -357,7 +357,11 @@ static CPLString GDALGMLJP2EvalExpr(const CPLString &osTemplate,
+ /************************************************************************/
+ 
+ static void GDALGMLJP2XPathErrorHandler(void * /* userData */,
++#if LIBXML_VERSION >= 21200
++                                        const xmlError *error)
++#else
+                                         xmlErrorPtr error)
++#endif
+ {
+     if (error->domain == XML_FROM_XPATH && error->str1 != nullptr &&
+         error->int1 < static_cast<int>(strlen(error->str1)))

@@ -167,6 +167,10 @@ ExternalProject_Add(
     SHA256=f98a654f348a08ef2a09ac78bc9ac0707d7de2b7f942685f5953041399ee6959
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
 
+    # libxml2 >= 2.12 made xmlError const; GDAL fixed that in 3.8.
+    PATCH_COMMAND
+    patch -p1 < ${PATCH_DIR}/gdal-libxml2-2.12.patch
+
     # "-DGDAL_ENABLE_DRIVER_PDF=OFF"
     # Turns off the PDF support, which doesn't compile with higher version gcc.
     # Postgis doesn't need it anyway.
