@@ -1,7 +1,8 @@
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+REM Do not put the database password in this file or in PGPASSWORD.
+REM Use %APPDATA%\postgresql\pgpass.conf or PGPASSFILE instead.
 set THEDB=geocoder
 set PGBIN=C:\Program Files\PostgreSQL\9.1\bin
 set PGCONTRIB=C:\Program Files\PostgreSQL\9.1\share\contrib
