@@ -86,8 +86,8 @@ ExternalProject_Add(
     BUILD_COMMAND make -j${JOBS}
     INSTALL_COMMAND
     make install
-    COMMAND
-    sed -i "s|prefix=${PROJ_GDAL_PREFIX}|prefix=${INSTALL_DIR}|g" ${INSTALL_DIR}/lib64/pkgconfig/proj.pc
+    # PROJ 7's CMake build installs no proj.pc; GDAL finds it through the
+    # cmake config files under lib64/cmake/proj, which are relocatable.
     # Workaround el8 find libproj issue. postgis hardcode it to 'prefix/lib'
     COMMAND
     mkdir -p ${INSTALL_DIR}/lib &&
