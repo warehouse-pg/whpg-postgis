@@ -367,6 +367,7 @@ main (int argc, char **argv)
 
 	printf("%s", header);
 	free(header);
+	header = NULL;
 
 	/* If we are not in "prepare" mode, go ahead and write out the data. */
 	if ( state->config->opt != 'p' )

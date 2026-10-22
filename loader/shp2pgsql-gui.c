@@ -1570,6 +1570,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 		   statement will be a COPY and so will change connection mode */
 		ret = pgui_exec(header);
 		free(header);
+		header = NULL;
 
 		if (!ret)
 			goto import_cleanup;

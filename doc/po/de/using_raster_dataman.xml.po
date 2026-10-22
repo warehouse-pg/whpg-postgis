@@ -1246,7 +1246,7 @@ msgstr "Sie können das unten angeführte Programm über <programlisting>http://
 msgid ""
 "<![CDATA[<?php\n"
 "/** contents of test_raster.php **/\n"
-"$conn_str ='dbname=mydb host=localhost port=5432 user=myuser password=mypwd';\n"
+"$conn_str ='dbname=mydb host=localhost port=5432 user=myuser'; /* password comes from ~/.pgpass or PGPASSFILE */\n"
 "$dbconn = pg_connect($conn_str);\n"
 "header('Content-Type: image/png');\n"
 "/**If a particular projection was requested use it otherwise use mass state plane meters **/\n"
@@ -1268,7 +1268,7 @@ msgid ""
 "if ($row === false) return;\n"
 "echo pg_unescape_bytea($row[0]);\n"
 "?>]]>"
-msgstr "<![CDATA[<?php\n/** Inahlt von test_raster.php **/\n$conn_str ='dbname=mydb host=localhost port=5432 user=myuser password=mypwd';\n$dbconn = pg_connect($conn_str);\nheader('Content-Type: image/png');\n/**Wenn eine bestimmte Projektion angefragt ist, wird diese verwendet, ansonsten wird \"Mass State Plane Meters\" verwendet **/\nif (!empty( $_REQUEST['srid'] ) && is_numeric( $_REQUEST['srid']) ){\n                $input_srid = intval($_REQUEST['srid']);\n}\nelse { $input_srid = 26986; }\n/**  \"set bytea_output\" für PostgreSQL 9.0+, wird für 8.4 nicht benötigt**/\n$sql = \"set bytea_output='escape';\nSELECT ST_AsPNG(ST_Transform(\n                        ST_AddBand(ST_Union(rast,1), ARRAY[ST_Union(rast,2),ST_Union(rast,3)])\n                                ,$input_srid) ) As new_rast\n FROM aerials.boston\n        WHERE\n         ST_Intersects(rast, ST_Transform(ST_MakeEnvelope(-71.1217, 42.227, -71.1210, 42.218,4326),26986) )\";\n$result = pg_query($sql);\n$row = pg_fetch_row($result);\npg_free_result($result);\nif ($row === false) return;\necho pg_unescape_bytea($row[0]);\n?>]]>"
+msgstr "<![CDATA[<?php\n/** Inahlt von test_raster.php **/\n$conn_str ='dbname=mydb host=localhost port=5432 user=myuser'; /* password comes from ~/.pgpass or PGPASSFILE */\n$dbconn = pg_connect($conn_str);\nheader('Content-Type: image/png');\n/**Wenn eine bestimmte Projektion angefragt ist, wird diese verwendet, ansonsten wird \"Mass State Plane Meters\" verwendet **/\nif (!empty( $_REQUEST['srid'] ) && is_numeric( $_REQUEST['srid']) ){\n                $input_srid = intval($_REQUEST['srid']);\n}\nelse { $input_srid = 26986; }\n/**  \"set bytea_output\" für PostgreSQL 9.0+, wird für 8.4 nicht benötigt**/\n$sql = \"set bytea_output='escape';\nSELECT ST_AsPNG(ST_Transform(\n                        ST_AddBand(ST_Union(rast,1), ARRAY[ST_Union(rast,2),ST_Union(rast,3)])\n                                ,$input_srid) ) As new_rast\n FROM aerials.boston\n        WHERE\n         ST_Intersects(rast, ST_Transform(ST_MakeEnvelope(-71.1217, 42.227, -71.1210, 42.218,4326),26986) )\";\n$result = pg_query($sql);\n$row = pg_fetch_row($result);\npg_free_result($result);\nif ($row === false) return;\necho pg_unescape_bytea($row[0]);\n?>]]>"
 
 #. Tag: title
 #: using_raster_dataman.xml:499
@@ -1323,9 +1323,8 @@ msgid ""
 "-- web.config connection string section --\n"
 "<![CDATA[<connectionStrings>\n"
 "    <add name=\"DSN\"\n"
-"        connectionString=\"server=localhost;database=mydb;Port=5432;User Id=myuser;password=mypwd\"/>\n"
-"</connectionStrings>]]>"
-msgstr "-- web.config Verbindungsaufbau --\n<![CDATA[<connectionStrings>\n    <add name=\"DSN\"\n        connectionString=\"server=localhost;database=mydb;Port=5432;User Id=myuser;password=mypwd\"/>\n</connectionStrings>]]>"
+"        connectionString=\"server=localhost;database=mydb;Port=5432;User Id=myuser\"/>\n    <!-- password comes from %APPDATA%\\postgresql\\pgpass.conf or PGPASSFILE -->\n</connectionStrings>]]>"
+msgstr "-- web.config Verbindungsaufbau --\n<![CDATA[<connectionStrings>\n    <add name=\"DSN\"\n        connectionString=\"server=localhost;database=mydb;Port=5432;User Id=myuser\"/>\n    <!-- password comes from %APPDATA%\\postgresql\\pgpass.conf or PGPASSFILE -->\n</connectionStrings>]]>"
 
 #. Tag: programlisting
 #: using_raster_dataman.xml:510
