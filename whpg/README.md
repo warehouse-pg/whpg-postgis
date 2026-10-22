@@ -16,7 +16,7 @@ SHA256 in `CMakeLists.txt`):
 | Library | Version | Why this version |
 |---------|---------|------------------|
 | PROJ    | 7.2.1   | Last release that ships `proj_api.h`; PostGIS 2.5 (this branch) still uses the PROJ.4 API. PROJ 8 drops it. |
-| GEOS    | 3.10.7  | Last patch release of the 3.10 line this branch is tested against (`regress` expectations were adjusted for 3.10). |
+| GEOS    | 3.10.2  | Unchanged, same as the whpg7 branch. The `regress` expectations on this branch were adjusted for 3.10.2; 3.10.7 changes `ST_Boundary` Z values, relate matrices under boundary-node rules and the overlay error texts (`boundary`, `relate_bnr`, `tickets` fail), so a bump needs the expected outputs refreshed first. |
 | GDAL    | 3.6.4   | Same line as the whpg7 branch; GDAL >= 3.5 needs PROJ >= 6.3, which rules out the old PROJ 5. |
 | libxml2 | 2.13.9  | Current maintained 2.13 line. Built without python, lzma and threads: PostGIS only needs the parser. |
 | json-c  | 0.18    | Same as the whpg7 branch (CMake build, static, PIC). |

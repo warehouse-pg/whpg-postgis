@@ -94,13 +94,18 @@ ExternalProject_Add(
     ln -sf ${INSTALL_DIR}/lib64/libproj.a ${INSTALL_DIR}/lib
 )
 
+# GEOS stays at 3.10.2 (same as whpg7): the regress expectations on this
+# branch were adjusted for it, and 3.10.3+ change ST_Boundary Z values,
+# relate matrices under boundary-node rules and the overlay error texts
+# (boundary, relate_bnr and tickets fail with 3.10.7). Moving it needs the
+# expected outputs refreshed first; see README.md.
 ExternalProject_Add(
     geos
 
     URL
-    https://download.osgeo.org/geos/geos-3.10.7.tar.bz2
+    https://download.osgeo.org/geos/geos-3.10.2.tar.bz2
     URL_HASH
-    SHA256=8b2ab4d04d660e27f2006550798f49dd11748c3767455cae9f71967dc437da1f
+    SHA256=50bbc599ac386b4c2b3962dcc411f0040a61f204aaef4eba7225ecdd0cf45715
     DOWNLOAD_DIR ${DOWNLOAD_DIR}
 
     CMAKE_ARGS
