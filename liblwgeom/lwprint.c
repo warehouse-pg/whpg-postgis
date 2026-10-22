@@ -244,6 +244,10 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 			else
 			{
 				/* Not reading anything, just pass through the '.' */
+				if (strlen(pieces[current_piece]) + 1 >= WORK_SIZE)
+				{
+					lwerror("Bad format, literal text in a single piece was greater than our working limit.");
+				}
 				lwstr_append(pieces[current_piece], WORK_SIZE, &next_char, 1);
 			}
 			break;
@@ -294,6 +298,10 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 				}
 			}
 			/* Copy all the character's bytes into the current piece. */
+			if (strlen(pieces[current_piece]) + multibyte_char_width >= WORK_SIZE)
+			{
+				lwerror("Bad format, literal text in a single piece was greater than our working limit.");
+			}
 			lwstr_append(pieces[current_piece], WORK_SIZE, &(format[index]), multibyte_char_width);
 			/* Now increment index past the rest of those bytes. */
 			index += multibyte_char_width - 1;

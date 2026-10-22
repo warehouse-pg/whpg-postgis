@@ -10,6 +10,7 @@
 # the terms of the GNU General Public Licence. See the COPYING file.
 #
 
+use POSIX ();
 
 sub usage
 {
@@ -44,7 +45,11 @@ sub run_psql
   if ( ! $pid )
   {
     open(STDERR, '>&', \*STDOUT) if $merge_stderr;
-    exec('psql', @args) or die "Could not run psql: $!";
+    exec('psql', @args);
+    # exec failed: report and leave the child immediately, without running
+    # the parent's END blocks or destructors.
+    print STDERR "Could not run psql: $!\n";
+    POSIX::_exit(127);
   }
   my $out = join('', <$fh>);
   close($fh);
