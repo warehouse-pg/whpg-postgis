@@ -979,9 +979,7 @@ static int phrase_from_morphs( struct morph *morph_vector ,
        a ;
 
    BLANK_STRING(Dest) ;
-   append_string_to_max( Dest ,
-                         morph_vector[ beg ] . Text ,
-                         MAXSTRLEN ) ;
+   snprintf( Dest , MAXTEXT , "%s" , morph_vector[ beg ] . Text ) ;
    for ( i = beg + 1 ;
          i <= end ;
          i++ ) {

@@ -1165,9 +1165,10 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 		        ! strcmp(name, "primary") ||
 		        ! strcmp(name, "oid") || ! strcmp(name, "ctid"))
 		{
+			/* "__" + len + NUL must fit in MAXFIELDNAMELEN */
 			size_t len = strlen(name);
-			if (len > (MAXFIELDNAMELEN - 2))
-				len = MAXFIELDNAMELEN - 2;
+			if (len > (MAXFIELDNAMELEN - 3))
+				len = MAXFIELDNAMELEN - 3;
 			memcpy(name2 + 2, name, len);
 			name2[len + 2] = '\0';
 			name2[0] = '_';
