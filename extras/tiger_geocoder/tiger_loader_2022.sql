@@ -177,6 +177,7 @@ $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_platform' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_platform(os varchar(50) PRIMARY KEY, declare_sect text, pgbin text, wget text, unzip_command text, psql text, path_sep text, loader text, environ_set_command text, county_process_command text);
+      COMMENT ON TABLE loader_platform IS 'Shell fragments that Loader_Generate_Script and Loader_Generate_Nation_Script paste verbatim into the scripts they produce. Anyone who can write this table can inject commands into those scripts, so keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';
@@ -244,6 +245,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_variables' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_variables(tiger_year varchar(4) PRIMARY KEY, website_root text, staging_fold text, data_schema text, staging_schema text);
+      COMMENT ON TABLE loader_variables IS 'Values pasted verbatim into the shell scripts produced by Loader_Generate_Script and Loader_Generate_Nation_Script. Keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';

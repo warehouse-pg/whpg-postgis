@@ -2,7 +2,9 @@
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Do not put the database password in this file or in PGPASSWORD: it would
+# end up in the process environment and in version control. Use ~/.pgpass
+# (chmod 600) or PGPASSFILE instead.
 THEDB=geocoder
 PSQL_CMD=/usr/bin/psql
 PGCONTRIB=/usr/share/postgresql/contrib

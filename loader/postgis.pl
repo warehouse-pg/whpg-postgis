@@ -32,6 +32,25 @@ sub enable
   die "Enable is not implemented yet";
 }
 
+# Run psql with the given arguments, bypassing the shell so that database
+# and schema names can never be interpreted as shell syntax. Returns the
+# output as a single string; $? holds the exit status as with backticks.
+# When $merge_stderr is true, stderr is captured together with stdout.
+sub run_psql
+{
+  my ($merge_stderr, @args) = @_;
+  my $pid = open(my $fh, '-|');
+  die "Could not fork to run psql: $!" unless defined $pid;
+  if ( ! $pid )
+  {
+    open(STDERR, '>&', \*STDOUT) if $merge_stderr;
+    exec('psql', @args) or die "Could not run psql: $!";
+  }
+  my $out = join('', <$fh>);
+  close($fh);
+  return $out;
+}
+
 sub upgrade
 {
   die "Please specify at least a database name" unless @_;
@@ -39,7 +58,10 @@ sub upgrade
   foreach my $db (@_)
   {
     print "upgrading db $db\n";
-    my $LOG=`cat <<EOF | psql -qXtA ${db}
+    # List form of open(): the database name is passed as an argument,
+    # never interpolated into a shell command line.
+    open(my $SESSION, '|-', 'psql', '-qXtA', $db) || die "Could not connect to database ${db}";
+    print $SESSION <<'EOF';
 BEGIN;
 UPDATE pg_catalog.pg_extension SET extversion = 'ANY'
  WHERE extname IN (
@@ -51,7 +73,8 @@ UPDATE pg_catalog.pg_extension SET extversion = 'ANY'
   );
 SELECT postgis_extensions_upgrade();
 COMMIT;
-EOF`;
+EOF
+    close($SESSION);
   }
 }
 
@@ -68,7 +91,7 @@ SELECT n.nspname
     AND p.proname = 'postgis_full_version'
 ";
 
-		my $SCHEMA=`psql -qXtA ${db} -c "${sql}" 2>&1`;
+		my $SCHEMA = run_psql(1, '-qXtA', $db, '-c', $sql);
 		chop($SCHEMA);
 		if ( $? ne 0 )
 		{
@@ -83,8 +106,16 @@ SELECT n.nspname
       next;
     }
 
-    $sql="SELECT ${SCHEMA}.postgis_full_version()";
-    my $FULL_VERSION=`psql -qXtA ${db} -c "${sql}"`;
+    # The schema name comes from the catalog and may contain any
+    # character, so quote it as an identifier instead of pasting it in.
+    $sql="SELECT quote_ident(n.nspname)
+  FROM pg_namespace n, pg_proc p
+  WHERE n.oid = p.pronamespace
+    AND p.proname = 'postgis_full_version'";
+    my $QSCHEMA = run_psql(0, '-qXtA', $db, '-c', $sql);
+    chop($QSCHEMA);
+    $sql="SELECT ${QSCHEMA}.postgis_full_version()";
+    my $FULL_VERSION = run_psql(0, '-qXtA', $db, '-c', $sql);
 		#print "FULL_VERSION: ${FULL_VERSION}\n";
 
     #POSTGIS="3.1.0dev r3.1.0alpha1-3-gfc5392de7"

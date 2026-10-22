@@ -630,6 +630,9 @@ tract_id
           <listitem>
             <para><varname>loader_lookuptables</varname> each record defines a kind of table (state, county), whether to process records in it and how to load them in.  Defines the steps to import data, stage data, add, removes columns, indexes, and constraints for each.  Each table is prefixed with the state and inherits from a table in the tiger schema. e.g. creates <varname>tiger_data.ma_faces</varname> which inherits from <varname>tiger.faces</varname></para>
           </listitem>
+          <listitem>
+            <para>The values in <varname>loader_platform</varname>, <varname>loader_variables</varname> and <varname>loader_lookuptables</varname> are pasted verbatim into the shell scripts that <xref linkend="Loader_Generate_Script" /> and <xref linkend="Loader_Generate_Nation_Script" /> produce, and those scripts run with the privileges of whoever executes them. Grant write access to these tables to trusted administrators only.</para>
+          </listitem>
         </orderedlist>
         <para>Availability: 2.0.0 </para>
         <note><para><xref linkend="Loader_Generate_Script" /> includes this logic, but if you installed tiger geocoder prior to PostGIS 2.0.0 alpha5, you'll need to run this on the states you have already done
