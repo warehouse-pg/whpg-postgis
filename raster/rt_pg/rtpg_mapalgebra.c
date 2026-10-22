@@ -4692,10 +4692,7 @@ Datum RASTER_mapAlgebraExpr(PG_FUNCTION_ARGS)
         len = strlen("SELECT (") + strlen(expression) + strlen(")::double precision");
         initexpr = (char *)palloc(len + 1);
 
-        strncpy(initexpr, "SELECT (", strlen("SELECT ("));
-        strncpy(initexpr + strlen("SELECT ("), expression, strlen(expression));
-				strncpy(initexpr + strlen("SELECT (") + strlen(expression), ")::double precision", strlen(")::double precision"));
-        initexpr[len] = '\0';
+        snprintf(initexpr, len + 1, "SELECT (%s)::double precision", expression);
 
         POSTGIS_RT_DEBUGF(3, "RASTER_mapAlgebraExpr: Expression is %s", initexpr);
 
@@ -6823,10 +6820,7 @@ Datum RASTER_mapAlgebra2(PG_FUNCTION_ARGS)
 						PG_RETURN_NULL();
 					}
 
-					strncpy(sql, "SELECT (", strlen("SELECT ("));
-					strncpy(sql + strlen("SELECT ("), expr, strlen(expr));
-					strncpy(sql + strlen("SELECT (") + strlen(expr), ")::double precision", strlen(")::double precision"));
-					sql[len] = '\0';
+					snprintf(sql, len + 1, "SELECT (%s)::double precision", expr);
 
 					POSTGIS_RT_DEBUGF(3, "sql #%d: %s", i, sql);
 

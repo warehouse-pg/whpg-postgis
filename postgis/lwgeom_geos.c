@@ -848,6 +848,8 @@ Datum buffer(PG_FUNCTION_ARGS)
 
 	if (nargs > 2)
 	{
+		char *saveptr = NULL;
+
 		/* We strdup `cause we're going to modify it */
 		params = pstrdup(PG_GETARG_CSTRING(2));
 
@@ -856,7 +858,7 @@ Datum buffer(PG_FUNCTION_ARGS)
 		for (param=params; ; param=NULL)
 		{
 			char *key, *val;
-			param = strtok(param, " ");
+			param = strtok_r(param, " ", &saveptr);
 			if (!param) break;
 			POSTGIS_DEBUGF(3, "Param: %s", param);
 
@@ -1106,6 +1108,7 @@ Datum ST_OffsetCurve(PG_FUNCTION_ARGS)
 	if ( nargs > 2 )
 	{
 		text *wkttext = PG_GETARG_TEXT_P(2);
+		char *saveptr = NULL;
 		paramstr = text_to_cstring(wkttext);
 
 		POSTGIS_DEBUGF(3, "paramstr: %s", paramstr);
@@ -1113,7 +1116,7 @@ Datum ST_OffsetCurve(PG_FUNCTION_ARGS)
 		for ( param=paramstr; ; param=NULL )
 		{
 			char *key, *val;
-			param = strtok(param, " ");
+			param = strtok_r(param, " ", &saveptr);
 			if (!param) break;
 			POSTGIS_DEBUGF(3, "Param: %s", param);
 

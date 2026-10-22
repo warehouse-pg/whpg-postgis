@@ -184,12 +184,8 @@ Datum geometry_geometrytype(PG_FUNCTION_ARGS)
 	/* Read just the header from the toasted tuple */
 	gser = PG_GETARG_GSERIALIZED_P_SLICE(0, 0, gserialized_max_header_size());
 
-	/* Make it empty string to start */
-	type_str[0] = 0;
-
 	/* Build up the output string */
-	strncat(type_str, "ST_", type_str_len);
-	strncat(type_str, lwtype_name(gserialized_get_type(gser)), type_str_len - 3);
+	snprintf(type_str, sizeof(type_str), "ST_%s", lwtype_name(gserialized_get_type(gser)));
 
 	/* Build a text type to store things in */
 	type_text = cstring_to_text(type_str);

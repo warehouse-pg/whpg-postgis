@@ -107,6 +107,12 @@
 		 <para>To get a summary about your raster via GDAL use gdalinfo:
 		 <programlisting>gdalinfo  "PG:host=localhost port=5432 dbname='mygisdb' user='postgres' password='whatever' schema='someschema' table=sometable"</programlisting>
 		 </para>
+		 <note><para>The <varname>password=</varname> values in these examples are placeholders.
+		 In practice leave the password out of the connection string (it would otherwise be
+		 visible in the process list and shell history) and keep it in
+		 <filename>~/.pgpass</filename> (<filename>%APPDATA%\postgresql\pgpass.conf</filename>
+		 on Windows), a <ulink url="https://www.postgresql.org/docs/current/libpq-pgservice.html">connection service file</ulink>,
+		 or your secret manager; libpq picks it up from there.</para></note>
 
 		 <para>To export data to other raster formats,
 			use gdal_translate the below will export all data from a table to a PNG file at 10% size.</para>

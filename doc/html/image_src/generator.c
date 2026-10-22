@@ -231,8 +231,8 @@ addDropShadow(int layerNumber)
 {
 	// TODO: change to properly sized string
 	char str[512];
-	sprintf(
-	    str,
+	snprintf(
+	    str, sizeof(str),
 	    "convert tmp%d.png -gravity center \"(\" +clone -background navy -shadow 100x3+4+4 \")\" +swap -background none -flatten tmp%d.png",
 	    layerNumber, layerNumber);
 	LWDEBUGF(4, "%s", str);
@@ -250,8 +250,8 @@ addHighlight(int layerNumber)
 {
 	// TODO: change to properly sized string
 	char str[512];
-	sprintf(
-	    str,
+	snprintf(
+	    str, sizeof(str),
 	    "convert tmp%d.png \"(\" +clone -channel A -separate +channel -negate -background black -virtual-pixel background -blur 0x3 -shade 120x55 -contrast-stretch 0%% +sigmoidal-contrast 7x50%% -fill grey50 -colorize 10%% +clone +swap -compose overlay -composite \")\" -compose In -composite tmp%d.png",
 	    layerNumber, layerNumber);
 	LWDEBUGF(4, "%s", str);
@@ -309,8 +309,7 @@ getStyleName(char **styleName, char* line)
 	if (ptr == NULL)
 	{
 		*styleName = malloc( 8 );
-		strncpy(*styleName, "Default", 7);
-		(*styleName)[7] = '\0';
+		memcpy(*styleName, "Default", 8);
 		return 1;
 	}
 	else
@@ -352,10 +351,11 @@ int main( int argc, const char* argv[] )
 		return -1;
 	}
 
-	filename = malloc( strlen(argv[1]) + strlen(image_path) + 1 );
-	strcpy( filename, image_path );
-	strncat( filename, argv[1], strlen(argv[1])-3 );
-	strncat( filename, "png", 3 );
+	{
+		size_t filename_len = strlen(argv[1]) + strlen(image_path) + 1;
+		filename = malloc( filename_len );
+		snprintf( filename, filename_len, "%s%.*spng", image_path, (int) (strlen(argv[1]) - 3), argv[1] );
+	}
 
 	printf( "generating %s\n", filename );
 
