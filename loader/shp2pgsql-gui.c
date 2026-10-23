@@ -1424,7 +1424,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 	PGresult *result;
 
 	int ret, i = 0;
-	char *header, *footer, *record;
+	char *header = NULL, *footer = NULL, *record = NULL;
 
 	/* Get the first row of the import list */
 	is_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(import_file_list_store), &iter);
@@ -1536,11 +1536,10 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 		}
 
 		/* For progress display, only show the "core" filename */
-		for (i = strlen(loader_file_config->shp_file); i >= 0
+		for (i = strlen(loader_file_config->shp_file); i > 0
 			&& loader_file_config->shp_file[i - 1] != '\\' && loader_file_config->shp_file[i - 1] != '/'; i--);
 
-		progress_shapefile = malloc(strlen(loader_file_config->shp_file));
-		strcpy(progress_shapefile, &loader_file_config->shp_file[i]);
+		progress_shapefile = strdup(&loader_file_config->shp_file[i]);
 
 		/* Display the progress dialog */
 		snprintf(progress_text, GUIMSG_LINE_MAXLEN, _("Importing shapefile %s (%d records)..."), progress_shapefile, ShpLoaderGetRecordCount(state));
@@ -1570,6 +1569,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 		   statement will be a COPY and so will change connection mode */
 		ret = pgui_exec(header);
 		free(header);
+		header = NULL;
 
 		if (!ret)
 			goto import_cleanup;
@@ -1599,6 +1599,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 				/* Send the result to the remote server: this should put us in COPY mode */
 				ret = pgui_copy_start(header);
 				free(header);
+				header = NULL;
 
 				if (!ret)
 					goto import_cleanup;
@@ -1623,6 +1624,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 						pgui_logf(_("Import failed on record number %d"), i);
 
 					free(record);
+					record = NULL;
 					break;
 
 				case SHPLOADERERR:
@@ -1645,6 +1647,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 						pgui_logf(_("Import failed on record number %d"), i);
 
 					free(record);
+					record = NULL;
 					break;
 
 				case SHPLOADERRECDELETED:
@@ -1707,6 +1710,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 			/* Send the footer to the server */
 			ret = pgui_exec(footer);
 			free(footer);
+			footer = NULL;
 
 			if (!ret)
 				goto import_cleanup;
