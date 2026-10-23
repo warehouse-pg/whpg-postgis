@@ -576,7 +576,7 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
         psSHP->sHooks.FClose( psSHP->fpSHX );
         if (psSHP->panRecOffset) free( psSHP->panRecOffset );
         if (psSHP->panRecSize) free( psSHP->panRecSize );
-        if (pabyBuf) free( pabyBuf );
+        if (pabyBuf) free( pabyBuf ); /* nosemgrep: c.lang.security.double-free.double-free */
         free( psSHP );
         return SHPLIB_NULLPTR;
     }
@@ -585,6 +585,7 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
     {
         memset(psSHP->panRecOffset, 0, sizeof(unsigned int) * MAX(1,psSHP->nMaxRecords) );
         memset(psSHP->panRecSize, 0, sizeof(unsigned int) * MAX(1,psSHP->nMaxRecords) );
+        /* nosemgrep: c.lang.security.double-free.double-free */
         free( pabyBuf ); // sometimes make cppcheck happy, but
         return( psSHP );
     }
@@ -605,7 +606,7 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
         psSHP->sHooks.FClose( psSHP->fpSHX );
         free( psSHP->panRecOffset );
         free( psSHP->panRecSize );
-        free( pabyBuf );
+        free( pabyBuf ); /* nosemgrep: c.lang.security.double-free.double-free */
         free( psSHP );
 
         return SHPLIB_NULLPTR;
@@ -637,7 +638,7 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
 
             psSHP->sHooks.Error( str );
             SHPClose(psSHP);
-            free( pabyBuf );
+            free( pabyBuf ); /* nosemgrep: c.lang.security.double-free.double-free */
             return SHPLIB_NULLPTR;
         }
         if( nLength > STATIC_CAST(unsigned int, INT_MAX / 2 - 4) )
@@ -649,13 +650,13 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
 
             psSHP->sHooks.Error( str );
             SHPClose(psSHP);
-            free( pabyBuf );
+            free( pabyBuf ); /* nosemgrep: c.lang.security.double-free.double-free */
             return SHPLIB_NULLPTR;
         }
         psSHP->panRecOffset[i] = nOffset*2;
         psSHP->panRecSize[i] = nLength*2;
     }
-    free( pabyBuf );
+    free( pabyBuf ); /* nosemgrep: c.lang.security.double-free.double-free */
 
     return( psSHP );
 }
@@ -1120,7 +1121,7 @@ SHPCreateLL( const char * pszLayer, int nShapeType, SAHooks *psHooks )
     return( SHPOpenLL( pszLayer, "r+b", psHooks ) );
 
 error:
-    if (pszFullname) free(pszFullname);
+    if (pszFullname) free(pszFullname); /* nosemgrep: c.lang.security.double-free.double-free */
     if (fpSHP) psHooks->FClose( fpSHP );
     if (fpSHX) psHooks->FClose( fpSHX );
     return SHPLIB_NULLPTR;
