@@ -3298,8 +3298,7 @@ Datum RASTER_clip(PG_FUNCTION_ARGS)
 	if (!PG_ARGISNULL(5) && PG_GETARG_BOOL(5) == TRUE){
 			options_len = options_len + 1;
 			options = (char **) palloc(sizeof(char *) * options_len);
-			options[options_len - 1] = palloc(sizeof(char*) * (strlen("ALL_TOUCHED=TRUE") + 1));
-		 	strcpy(options[options_len - 1], "ALL_TOUCHED=TRUE");
+			options[options_len - 1] = pstrdup("ALL_TOUCHED=TRUE");
 	}
 
 	if (options_len) {
@@ -3726,13 +3725,13 @@ Datum RASTER_reclass(PG_FUNCTION_ARGS) {
 						sprintf(junk, "%s%s", dash_set[c], dash_set[c + 1]);
 						c++;
 						dash_set[c] = repalloc(dash_set[c], sizeof(char) * (strlen(junk) + 1));
-						strcpy(dash_set[c], junk);
+						memcpy(dash_set[c], junk, strlen(junk) + 1);
 						pfree(junk);
 
 						/* rebuild dash_set */
 						for (dash_it = 1; dash_it < dash_n; dash_it++) {
 							dash_set[dash_it - 1] = repalloc(dash_set[dash_it - 1], (strlen(dash_set[dash_it]) + 1) * sizeof(char));
-							strcpy(dash_set[dash_it - 1], dash_set[dash_it]);
+							memcpy(dash_set[dash_it - 1], dash_set[dash_it], strlen(dash_set[dash_it]) + 1);
 						}
 						dash_n--;
 						c--;

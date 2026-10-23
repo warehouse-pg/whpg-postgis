@@ -212,17 +212,17 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
     /* assume country code is US */
 
     ret->cc  = (char *) palloc0(3 * sizeof(char));
-    strcpy(ret->cc, "US");
+    memcpy(ret->cc, "US", 3);
 
     /* get US zipcode components */
 
     rc = match("\\b(\\d{5})[-\\s]{0,1}?(\\d{0,4})?$", s, ovect, 0);
     if (rc >= 2) {
         ret->zip = (char *) palloc0((ovect[3]-ovect[2]+1) * sizeof(char));
-        strncpy(ret->zip, s+ovect[2], ovect[3]-ovect[2]);
+        memcpy(ret->zip, s+ovect[2], ovect[3]-ovect[2]);
         if (rc >= 3) {
             ret->zipplus = (char *) palloc0((ovect[5]-ovect[4]+1) * sizeof(char));
-            strncpy(ret->zipplus, s+ovect[4], ovect[5]-ovect[4]);
+            memcpy(ret->zipplus, s+ovect[4], ovect[5]-ovect[4]);
         }
         /* truncate the postalcode off the string */
         *(s+ovect[0]) = '\0';
@@ -232,8 +232,8 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
         rc = match("\\b([a-z]\\d[a-z]\\s?\\d[a-z]\\d)$", s, ovect, PARSE_CASELESS);
         if (rc >= 1) {
             ret->zip = (char *) palloc0((ovect[1]-ovect[0]+1) * sizeof(char));
-            strncpy(ret->zip, s+ovect[0], ovect[1]-ovect[0]);
-            strcpy(ret->cc, "CA");
+            memcpy(ret->zip, s+ovect[0], ovect[1]-ovect[0]);
+            memcpy(ret->cc, "CA", 3);
             /* truncate the postalcode off the string */
             *(s+ovect[0]) = '\0';
         }
@@ -250,7 +250,7 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
     rc = match(stregx, s, ovect, PARSE_CASELESS);
     if (rc > 0) {
         state = (char *) palloc0((ovect[1]-ovect[0]+1) * sizeof(char));
-        strncpy(state, s+ovect[0], ovect[1]-ovect[0]);
+        memcpy(state, s+ovect[0], ovect[1]-ovect[0]);
 
         /* truncate the state/province off the string */
         *(s+ovect[0]) = '\0';
@@ -262,7 +262,7 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
         err = hsearch_r(e, FIND, &ep, stH);
         if (err) {
             ret->st = (char *) palloc0(3 * sizeof(char));
-            strcpy(ret->st, ep->data);
+            snprintf(ret->st, 3, "%s", (const char *) ep->data);
         }
 #else
         key = state;
@@ -279,7 +279,7 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
         /* check if it a Canadian Province */
         rc = match(caregx, ret->st, ovect, PARSE_CASELESS);
         if (rc > 0) {
-            strcpy(ret->cc, "CA");
+            memcpy(ret->cc, "CA", 3);
             // if (ret->cc) printf("  CC: %s\n", ret->cc);
         }
     }
@@ -360,7 +360,7 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
     if (rc > 0 && ovect[3]>ovect[2]) {
         /* we have a match so process it */
         ret->city = (char *) palloc0((ovect[3]-ovect[2]+1) * sizeof(char));
-        strncpy(ret->city, s+ovect[2], ovect[3]-ovect[2]);
+        memcpy(ret->city, s+ovect[2], ovect[3]-ovect[2]);
         /* truncate the state/province off the string */
         *(s+ovect[2]) = '\0';
     }
@@ -391,7 +391,7 @@ ADDRESS *parseaddress(HHash *stH, char *s, int *reterr)
         rc = match("^((?i)[nsew]?\\d+[-nsew]*\\d*[nsew]?\\b)", s, ovect, 0);
         if (rc > 0) {
             ret->num = (char *) palloc0((ovect[1]-ovect[0]+1) * sizeof(char));
-            strncpy(ret->num, s, ovect[1]-ovect[0]);
+            memcpy(ret->num, s, ovect[1]-ovect[0]);
             ret->street = pstrdup(clean_leading_punct(s+ovect[1]));
         }
     }

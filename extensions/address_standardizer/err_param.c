@@ -248,8 +248,9 @@ void register_error( ERR_PARAM *err_p ) {
             i < err_p -> last_err ;
             i++ ) {
          err_p -> err_array[ i ] . is_fatal = err_p -> err_array[ i + 1 ] . is_fatal ;
-         strcpy( err_p -> err_array[ i ] . content_buf ,
-                 err_p -> err_array[ i + 1 ] . content_buf ) ;
+         memcpy( err_p -> err_array[ i ] . content_buf ,
+                 err_p -> err_array[ i + 1 ] . content_buf ,
+                 MAXSTRLEN ) ;
       }
    } else {
       /* -- last_err points to the next one to fill -- */

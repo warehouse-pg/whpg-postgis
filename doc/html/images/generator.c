@@ -454,7 +454,7 @@ getStyleName(char **styleName, const char* line)
 	else
 	{
 		*styleName = malloc( ptr - line + 1);
-		strncpy(*styleName, line, ptr - line);
+		memcpy(*styleName, line, ptr - line);
 		(*styleName)[ptr - line] = '\0';
 		LWDEBUGF( 4, "%s", *styleName );
 		return 0;

@@ -82,14 +82,14 @@ rtpg_strreplace(
 		/* Replace each old string found with new string  */
 		while ((limit-- > 0) && (tmp = strstr(tmp, oldstr)) != NULL) {
 			length = (tmp - str); /* Number of chars to keep intouched */
-			strncpy(result + reslen, str, length); /* Original part keeped */
-			strcpy(result + (reslen += length), newstr); /* Insert new string */
+			memcpy(result + reslen, str, length); /* Original part keeped */
+			memcpy(result + (reslen += length), newstr, newlen); /* Insert new string */
 
 			reslen += newlen;
 			tmp += oldlen;
 			str = tmp;
 		}
-		strcpy(result + reslen, str); /* Copies last part and ending null char */
+		memcpy(result + reslen, str, strlen(str) + 1); /* Copies last part and ending null char */
 	}
 
 	if (count != NULL) *count = found;
@@ -143,6 +143,7 @@ rtpg_strsplit(const char *str, const char *delimiter, uint32_t *n) {
 	char *tmp = NULL;
 	char **rtn = NULL;
 	char *token = NULL;
+	char *saveptr = NULL;
 
 	*n = 0;
 	if (!str)
@@ -154,7 +155,7 @@ rtpg_strsplit(const char *str, const char *delimiter, uint32_t *n) {
 		fprintf(stderr, "Not enough memory\n");
 		return NULL;
 	}
-	strcpy(tmp, str);
+	memcpy(tmp, str, strlen(str) + 1);
 
 	if (!strlen(tmp) || !delimiter || !strlen(delimiter)) {
 		*n = 1;
@@ -168,12 +169,12 @@ rtpg_strsplit(const char *str, const char *delimiter, uint32_t *n) {
 			fprintf(stderr, "Not enough memory\n");
 			return NULL;
 		}
-		strcpy(rtn[0], tmp);
+		memcpy(rtn[0], tmp, strlen(tmp) + 1);
 		pfree(tmp);
 		return rtn;
 	}
 
-	token = strtok(tmp, delimiter);
+	token = strtok_r(tmp, delimiter, &saveptr);
 	while (token != NULL) {
 		if (*n < 1) {
 			rtn = (char **) palloc(sizeof(char *));
@@ -193,10 +194,10 @@ rtpg_strsplit(const char *str, const char *delimiter, uint32_t *n) {
 			return NULL;
 		}
 
-		strcpy(rtn[*n], token);
+		memcpy(rtn[*n], token, strlen(token) + 1);
 		*n = *n + 1;
 
-		token = strtok(NULL, delimiter);
+		token = strtok_r(NULL, delimiter, &saveptr);
 	}
 
 	pfree(tmp);
@@ -251,7 +252,7 @@ rtpg_trim(const char *input) {
 		fprintf(stderr, "Not enough memory\n");
 		return NULL;
 	}
-	strncpy(rtn, input, inputlen - offset);
+	memcpy(rtn, input, inputlen - offset);
 	rtn[inputlen - offset] = '\0';
 
 	return rtn;
@@ -360,7 +361,7 @@ LIMIT 1
 				elog(ERROR, "rtpg_getSR: Could not allocate memory for spatial reference text\n");
 				return NULL;
 			}
-			strncpy(srs, tmp, len);
+			memcpy(srs, tmp, len);
 			pfree(tmp);
 
 			break;

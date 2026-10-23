@@ -671,9 +671,6 @@ rt_band_load_offline_data(rt_band band) {
 	/* create VRT dataset */
 	hdsDst = VRTCreate(band->width, band->height);
 	GDALSetGeoTransform(hdsDst, ogt);
-	/*
-	GDALSetDescription(hdsDst, "/tmp/offline.vrt");
-	*/
 
 	/* add band as simple sources */
 	GDALAddBand(hdsDst, rt_util_pixtype_to_gdal_datatype(band->pixtype), NULL);
@@ -699,14 +696,6 @@ rt_band_load_offline_data(rt_band band) {
 
 	GDALClose(hdsDst);
 	GDALClose(hdsSrc);
-	/*
-	{
-		FILE *fp;
-		fp = fopen("/tmp/gdal_open_files.log", "w");
-		GDALDumpOpenDatasets(fp);
-		fclose(fp);
-	}
-	*/
 
 	if (_rast == NULL) {
 		rterror("rt_band_load_offline_data: Cannot load data from offline raster: %s", band->data.offline.path);

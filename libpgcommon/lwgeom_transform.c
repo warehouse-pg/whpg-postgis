@@ -154,7 +154,7 @@ SPI_pstrdup(const char* str)
 	if (str)
 	{
 		ostr = SPI_palloc(strlen(str)+1);
-		strcpy(ostr, str);
+		memcpy(ostr, str, strlen(str) + 1);
 	}
 	return ostr;
 }
@@ -325,27 +325,27 @@ GetProjStrings(int32_t srid)
 		/* Lambert Azimuthal Equal Area South Pole */
 		else if ( id == SRID_SOUTH_LAMBERT )
 		{
-			strncpy(strs.proj4text, "+proj=laea +lat_0=-90 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
+			strlcpy(strs.proj4text, "+proj=laea +lat_0=-90 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
 		}
 		/* Polar Sterographic South */
 		else if ( id == SRID_SOUTH_STEREO )
 		{
-			strncpy(strs.proj4text, "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen);
+			strlcpy(strs.proj4text, "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen);
 		}
 		/* Lambert Azimuthal Equal Area North Pole */
 		else if ( id == SRID_NORTH_LAMBERT )
 		{
-			strncpy(strs.proj4text, "+proj=laea +lat_0=90 +lon_0=-40 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
+			strlcpy(strs.proj4text, "+proj=laea +lat_0=90 +lon_0=-40 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
 		}
 		/* Polar Stereographic North */
 		else if ( id == SRID_NORTH_STEREO )
 		{
-			strncpy(strs.proj4text, "+proj=stere +lat_0=90 +lat_ts=71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
+			strlcpy(strs.proj4text, "+proj=stere +lat_0=90 +lat_ts=71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
 		}
 		/* World Mercator */
 		else if ( id == SRID_WORLD_MERCATOR )
 		{
-			strncpy(strs.proj4text, "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
+			strlcpy(strs.proj4text, "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxprojlen );
 		}
 		else
 		{

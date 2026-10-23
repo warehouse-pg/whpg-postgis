@@ -91,8 +91,10 @@ option_list_parse(char* input, char** olist)
 	if (!input) return;
 	size_t i = 0, sz;
 
-	/* strtok nulls out the space between each token */
-	for (key = strtok(input, toksep); key; key = strtok(NULL, toksep)) {
+	char *saveptr = NULL;
+
+	/* strtok_r nulls out the space between each token */
+	for (key = strtok_r(input, toksep, &saveptr); key; key = strtok_r(NULL, toksep, &saveptr)) {
 		if (i >= OPTION_LIST_SIZE) return;
 		olist[i] = key;
 		i += 2;
@@ -145,8 +147,10 @@ option_list_gdal_parse(char* input, char** olist)
 		ptr++;
 	}
 
+	char *saveptr = NULL;
+
 	/* Tokenize on spaces */
-	for (key = strtok(input, toksep); key; key = strtok(NULL, toksep)) {
+	for (key = strtok_r(input, toksep, &saveptr); key; key = strtok_r(NULL, toksep, &saveptr)) {
 		if (i >= OPTION_LIST_SIZE) return;
 		olist[i++] = key;
 	}

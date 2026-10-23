@@ -68,7 +68,7 @@ debug_standardize_address(PG_FUNCTION_ARGS)
 	STDADDR             *stdaddr;
 	char rule_in[100];
 	char rule_out[100];
-	char temp[100];
+	char temp[256];
 	int stz_no , n ;
 	DEF *__def__ ;
 	STZ **__stz_list__;
@@ -228,8 +228,8 @@ debug_standardize_address(PG_FUNCTION_ARGS)
 		if  (stz_no > 0 ){
 			appendStringInfoChar(result, ',');
 		}
-		strcpy(rule_in, "");
-		strcpy(rule_out, "");
+		rule_in[0] = '\0';
+		rule_out[0] = '\0';
 
 		__cur_stz__ = __stz_list__[stz_no] ;
 		elog( DEBUG2, "Raw standardization %d with score %f:\n" , ( stz_no  ) , __cur_stz__->score ) ;
@@ -246,13 +246,13 @@ debug_standardize_address(PG_FUNCTION_ARGS)
 			k2 = __cur_stz__->output[lex_pos] ;
 			if (started > 0){
 				appendStringInfoChar(result, ',');
-				strcat(rule_out, " ");
-				strcat(rule_in, " ");
+				strlcat(rule_out, " ", sizeof(rule_out));
+				strlcat(rule_in, " ", sizeof(rule_in));
 			}
 			sprintf(temp, "%d", __def__->Type);
-			strcat(rule_in, temp);
+			strlcat(rule_in, temp, sizeof(rule_in));
 			sprintf(temp, "%d", k2);
-			strcat(rule_out, temp);
+			strlcat(rule_out, temp, sizeof(rule_out));
 
 
 			appendStringInfo(result, "{\"pos\": %u,", lex_pos);
@@ -271,11 +271,7 @@ debug_standardize_address(PG_FUNCTION_ARGS)
 
 		appendStringInfoString(result, "]");
 		/* get the sql for the matching rule records */
-		strcpy(temp, "");
-		strcat(temp, rule_in);
-		strcat(temp, " -1 ");
-		strcat(temp, rule_out);
-		strcat(temp, " -1 %");
+		snprintf(temp, sizeof(temp), "%s -1 %s -1 %%", rule_in, rule_out);
 		 /* execute */
  		values[0] = CStringGetDatum(temp);
   	spi_result = SPI_execute_plan(plan, values, NULL, true, 1);

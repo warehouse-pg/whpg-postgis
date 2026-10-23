@@ -11,6 +11,7 @@
 #
 
 use File::Basename;
+use POSIX ();
 
 
 sub usage
@@ -55,7 +56,7 @@ sub install_upgrade_from
 
 	# sanify ${from}
 	die "'${from}': invalid version, only 3 dot-separated numbers optionally followed by alphanumeric string are allowed\n"
-		unless $from =~ /^[0-9]*\.[0-9]*\.[0-9]*[a-z1-9]*/;
+		unless $from =~ /^[0-9]+\.[0-9]+\.[0-9]+[a-z0-9]*$/;
 
 	# extension to process
 	my %extensions = %SUPPORTED_EXTENSIONS;
@@ -90,11 +91,13 @@ sub install_upgrade_from
 		die "File ${EXTDIR}/${extname}--TEMPLATED--TO--ANY.sql is missing"
 			unless -f "${EXTDIR}/${extname}--TEMPLATED--TO--ANY.sql";
 
-		my $shcmd = "ln -fs '${extname}--TEMPLATED--TO--ANY.sql' '${EXTDIR}/${extname}--${from}--ANY.sql'";
-		#print " CMD: ${shcmd}\n";
-		my $rv = system($shcmd);
+		# List form of system(): no shell is involved, so ${from} can never
+		# be interpreted as shell syntax.
+		my @lncmd = ('ln', '-fs', "${extname}--TEMPLATED--TO--ANY.sql", "${EXTDIR}/${extname}--${from}--ANY.sql");
+		#print " CMD: @lncmd\n";
+		my $rv = system(@lncmd);
 		if ( $rv ) {
-			die "Error encountered running: $shcmd: $!";
+			die "Error encountered running: @lncmd: $!";
 		}
 
 	}
@@ -176,9 +179,32 @@ sub install_extension_upgrades
 
 }
 
+# Run psql with the given arguments, bypassing the shell so that database
+# and schema names can never be interpreted as shell syntax. Returns the
+# output as a single string; $? holds the exit status as with backticks.
+# When $merge_stderr is true, stderr is captured together with stdout.
+sub run_psql
+{
+  my ($merge_stderr, @args) = @_;
+  my $pid = open(my $fh, '-|');
+  die "Could not fork to run psql: $!" unless defined $pid;
+  if ( ! $pid )
+  {
+    open(STDERR, '>&', \*STDOUT) if $merge_stderr;
+    exec('psql', @args);
+    # exec failed: report and leave the child immediately, without running
+    # the parent's END blocks or destructors.
+    print STDERR "Could not run psql: $!\n";
+    POSIX::_exit(127);
+  }
+  my $out = join('', <$fh>);
+  close($fh);
+  return $out;
+}
+
 sub get_all_databases
 {
-  my $ALL = `psql -qXtAc 'select datname from pg_database where datallowconn' template1`;
+  my $ALL = run_psql(0, '-qXtAc', 'select datname from pg_database where datallowconn', 'template1');
   return split("\n", $ALL);
 }
 
@@ -201,7 +227,7 @@ sub list_enabled_databases
   ";
   foreach my $db (@ALL)
   {
-    my $enabled = `psql -qXtAc "${sql}" ${db}`;
+    my $enabled = run_psql(0, '-qXtAc', $sql, $db);
     print $db . "\n" if $enabled ne '';
   }
 }
@@ -224,7 +250,7 @@ sub upgrade
   foreach my $db (@DB)
   {
     print "upgrading PostGIS in db $db if needed\n";
-    open(my $SESSION, "| psql -qXtA ${db} |") || die "Could not connect to database ${db}";
+    open(my $SESSION, '|-', 'psql', '-qXtA', $db) || die "Could not connect to database ${db}";
     print $SESSION <<'EOF';
 DO $BODY$
 BEGIN
@@ -258,13 +284,13 @@ sub status
   foreach my $db (@DB)
   {
     my $sql = "
-SELECT n.nspname
+SELECT quote_ident(n.nspname)
   FROM pg_namespace n, pg_proc p
   WHERE n.oid = p.pronamespace
     AND p.proname = 'postgis_full_version'
 ";
 
-		my $SCHEMA=`psql -qXtA ${db} -c "${sql}" 2>&1`;
+		my $SCHEMA = run_psql(1, '-qXtA', $db, '-c', $sql);
 		chop($SCHEMA);
 		if ( $? ne 0 )
 		{
@@ -280,7 +306,7 @@ SELECT n.nspname
     }
 
     $sql="SELECT ${SCHEMA}.postgis_full_version()";
-    my $FULL_VERSION=`psql -qXtA ${db} -c "${sql}"`;
+    my $FULL_VERSION = run_psql(0, '-qXtA', $db, '-c', $sql);
 		#print "FULL_VERSION: ${FULL_VERSION}\n";
 
     #POSTGIS="3.1.0dev r3.1.0alpha1-3-gfc5392de7"
