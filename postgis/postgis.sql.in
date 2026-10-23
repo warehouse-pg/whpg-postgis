@@ -1133,14 +1133,18 @@ CREATE OR REPLACE FUNCTION ST_MakeBox2d(geom1 geometry, geom2 geometry)
 -- ST_ESTIMATED_EXTENT( <schema name>, <table name>, <column name> )
 -----------------------------------------------------------------------
 
--- The ST_EstimatedExtent functions are SECURITY DEFINER on purpose: they
--- read pg_statistic, which only the owner of the extension can do, and
--- the C implementation (gserialized_estimated_extent) does not execute
--- SQL, so the caller's search_path cannot redirect any object lookup.
--- The relation is resolved from its text name through regclass with the
--- caller's search_path, which is the documented behaviour of the two-
--- argument form; pinning search_path here would break it. No SET
--- search_path is added for that reason.
+-- The ST_EstimatedExtent functions are SECURITY DEFINER (upstream PostGIS
+-- behaviour, kept here). The C implementation (gserialized_estimated_extent)
+-- reads the statistics through the syscache and the index directly, with no
+-- privilege check of its own, so what SECURITY DEFINER actually grants the
+-- caller is the ability to resolve and estimate tables in schemas they
+-- cannot otherwise use; dropping it is a possible follow-up. The table is
+-- resolved from its text name through regclass with the caller's
+-- search_path, which is the documented behaviour of the two-argument form,
+-- so no SET search_path is added here: pinning it would break that form.
+-- The only SQL the function can run is the postgis_initialize_cache()
+-- lookup of the postgis schema when PostGIS is not installed as an
+-- extension; that query is fixed text with no caller-controlled input.
 
 -- Availability: 2.3.0
 CREATE OR REPLACE FUNCTION ST_EstimatedExtent(text,text,text,boolean) RETURNS box2d AS
