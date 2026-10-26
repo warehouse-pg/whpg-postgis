@@ -2,10 +2,11 @@ The `CMakeLists.txt` in this directory enables the static link of the extension.
 
 # Build dependencies
 
-- `prec-devel` is needed for `address_standardizer` extension.
+- `pcre-devel` is needed for `address_standardizer` extension.
 - `sqlite-devel` and the `sqlite` CLI are needed to build the vendored PROJ
   (it generates `proj.db` at build time and links `libsqlite3`).
-- `libtiff-devel` is needed by the vendored GDAL.
+- `libtiff-devel` is needed to build the vendored GDAL, and the matching
+  runtime library to load the extension.
 - Remember to install `cmake`, `autoconf`, `patch` and other normal development packages to build.
 
 # Vendored dependencies
@@ -63,7 +64,6 @@ make install
 ```
 
 # Run tests
-
 
 From the build directory:
 
