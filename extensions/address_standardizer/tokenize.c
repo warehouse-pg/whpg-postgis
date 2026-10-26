@@ -912,8 +912,8 @@ static int set_lexeme( STAND_PARAM *s_p ,
                 FALSE ) ;
    }
    L = s_p -> lex_vector + n ;
-   strcpy( L -> Text ,
-           text ) ;
+   snprintf( L -> Text , MAXTEXT , "%s" ,
+             text ) ;
    L -> DefList = start_def ;
    L -> StartMorph = Start ;
    L -> EndMorph = End ;
@@ -979,8 +979,7 @@ static int phrase_from_morphs( struct morph *morph_vector ,
        a ;
 
    BLANK_STRING(Dest) ;
-   strcpy( Dest ,
-           morph_vector[ beg ] . Text ) ;
+   snprintf( Dest , MAXTEXT , "%s" , morph_vector[ beg ] . Text ) ;
    for ( i = beg + 1 ;
          i <= end ;
          i++ ) {

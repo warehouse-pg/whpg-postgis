@@ -298,8 +298,8 @@ rt_util_gdal_sr_auth_info(GDALDatasetH hds, char **authname, char **authcode) {
 					return ES_ERROR;
 				}
 
-				strncpy(*authname, pszAuthorityName, authorityName_len);
-				strncpy(*authcode, pszAuthorityCode, authorityCode_len);
+				memcpy(*authname, pszAuthorityName, authorityName_len);
+				memcpy(*authcode, pszAuthorityCode, authorityCode_len);
 			}
 		}
 

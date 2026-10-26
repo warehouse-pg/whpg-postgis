@@ -1211,8 +1211,7 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 			options = (char **) repalloc(options, sizeof(char *) * options_len);
 		}
 
-		options[options_len - 1] = palloc(sizeof(char*) * (strlen("ALL_TOUCHED=TRUE") + 1));
-		strcpy(options[options_len - 1], "ALL_TOUCHED=TRUE");
+		options[options_len - 1] = pstrdup("ALL_TOUCHED=TRUE");
 	}
 
 	if (options_len) {

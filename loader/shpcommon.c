@@ -247,7 +247,7 @@ colmap_read(const char *filename, colmap *map, char *errbuf, size_t errbuflen)
 
     /* Allocate memory and copy the string ensuring it is terminated */
     map->pgfieldnames[curmapsize] = malloc(fieldnamesize + 1);
-    strncpy(map->pgfieldnames[curmapsize], tmpstr, fieldnamesize);
+    memcpy(map->pgfieldnames[curmapsize], tmpstr, fieldnamesize);
     map->pgfieldnames[curmapsize][fieldnamesize] = '\0';
 
     /* Now swallow up any whitespace */
@@ -259,7 +259,7 @@ colmap_read(const char *filename, colmap *map, char *errbuf, size_t errbuflen)
 
     /* Allocate memory and copy the string ensuring it is terminated */
     map->dbffieldnames[curmapsize] = malloc(fieldnamesize + 1);
-    strncpy(map->dbffieldnames[curmapsize], tmpstr, fieldnamesize);
+    memcpy(map->dbffieldnames[curmapsize], tmpstr, fieldnamesize);
     map->dbffieldnames[curmapsize][fieldnamesize] = '\0';
 
     /* Error out if the dbffieldname is > 10 chars */

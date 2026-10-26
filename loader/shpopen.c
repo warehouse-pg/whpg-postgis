@@ -522,7 +522,7 @@ SHPOpenLL( const char * pszLayer, const char * pszAccess, SAHooks *psHooks )
 /*	on the passed in filename we will strip it off.			*/
 /* -------------------------------------------------------------------- */
     pszBasename = (char *) malloc(strlen(pszLayer)+5);
-    strcpy( pszBasename, pszLayer );
+    memcpy( pszBasename, pszLayer, strlen(pszLayer)+1 );
     for( i = strlen(pszBasename)-1;
          i > 0 && pszBasename[i] != '.' && pszBasename[i] != '/'
              && pszBasename[i] != '\\';
@@ -867,7 +867,7 @@ SHPCreateLL( const char * pszLayer, int nShapeType, SAHooks *psHooks )
 /*	on the passed in filename we will strip it off.			*/
 /* -------------------------------------------------------------------- */
     pszBasename = (char *) malloc(strlen(pszLayer)+5);
-    strcpy( pszBasename, pszLayer );
+    memcpy( pszBasename, pszLayer, strlen(pszLayer)+1 );
     for( i = strlen(pszBasename)-1;
          i > 0 && pszBasename[i] != '.' && pszBasename[i] != '/'
              && pszBasename[i] != '\\';

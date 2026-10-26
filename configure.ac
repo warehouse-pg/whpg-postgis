@@ -495,7 +495,7 @@ if test "x$LIBLWGEOM_ONLY" = "xno"; then
   PGSRV_INC=`"$PG_CONFIG" --includedir-server`
   PGSQL_BE_CPPFLAGS="-I${PGSRV_INC}"
   dnl Add $PGSRV_INC/port/win32 to MinGW build to pick up netdb.h
-  case $host in
+  case $host in # nosemgrep: generic.nginx.security.request-host-used -- autoconf build triplet, not an HTTP Host header
     *mingw32*)
       PGSQL_BE_CPPFLAGS="${PGSQL_BE_CPPFLAGS} -I${PGSRV_INC}/port/win32"
       ;;
@@ -1063,7 +1063,7 @@ if test "x$GUI" = "xyes"; then
 	AM_PATH_GTK_2_0([2.8.0], [GTK_BUILD="gui"], [GTK_BUILD=""])
 
 	dnl Add -mwindows to MinGW GUI build
-	case $host in
+	case $host in # nosemgrep: generic.nginx.security.request-host-used -- autoconf build triplet, not an HTTP Host header
 		*mingw32*)
 			GTK_WIN32_FLAGS=-mwindows
 			GTK_WIN32_RES=shp2pgsql-gui.res

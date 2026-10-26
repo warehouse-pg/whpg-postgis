@@ -129,40 +129,40 @@ Datum LWGEOM_getTYPE(PG_FUNCTION_ARGS)
 	type = gserialized_get_type(gser);
 
 	if (type == POINTTYPE)
-		strcpy(result,"POINT");
+		strlcpy(result, "POINT", maxtyplen);
 	else if (type == MULTIPOINTTYPE)
-		strcpy(result,"MULTIPOINT");
+		strlcpy(result, "MULTIPOINT", maxtyplen);
 	else if (type == LINETYPE)
-		strcpy(result,"LINESTRING");
+		strlcpy(result, "LINESTRING", maxtyplen);
 	else if (type == CIRCSTRINGTYPE)
-		strcpy(result,"CIRCULARSTRING");
+		strlcpy(result, "CIRCULARSTRING", maxtyplen);
 	else if (type == COMPOUNDTYPE)
-		strcpy(result, "COMPOUNDCURVE");
+		strlcpy(result, "COMPOUNDCURVE", maxtyplen);
 	else if (type == MULTILINETYPE)
-		strcpy(result,"MULTILINESTRING");
+		strlcpy(result, "MULTILINESTRING", maxtyplen);
 	else if (type == MULTICURVETYPE)
-		strcpy(result, "MULTICURVE");
+		strlcpy(result, "MULTICURVE", maxtyplen);
 	else if (type == POLYGONTYPE)
-		strcpy(result,"POLYGON");
+		strlcpy(result, "POLYGON", maxtyplen);
 	else if (type == TRIANGLETYPE)
-		strcpy(result,"TRIANGLE");
+		strlcpy(result, "TRIANGLE", maxtyplen);
 	else if (type == CURVEPOLYTYPE)
-		strcpy(result,"CURVEPOLYGON");
+		strlcpy(result, "CURVEPOLYGON", maxtyplen);
 	else if (type == MULTIPOLYGONTYPE)
-		strcpy(result,"MULTIPOLYGON");
+		strlcpy(result, "MULTIPOLYGON", maxtyplen);
 	else if (type == MULTISURFACETYPE)
-		strcpy(result, "MULTISURFACE");
+		strlcpy(result, "MULTISURFACE", maxtyplen);
 	else if (type == COLLECTIONTYPE)
-		strcpy(result,"GEOMETRYCOLLECTION");
+		strlcpy(result, "GEOMETRYCOLLECTION", maxtyplen);
 	else if (type == POLYHEDRALSURFACETYPE)
-		strcpy(result,"POLYHEDRALSURFACE");
+		strlcpy(result, "POLYHEDRALSURFACE", maxtyplen);
 	else if (type == TINTYPE)
-		strcpy(result,"TIN");
+		strlcpy(result, "TIN", maxtyplen);
 	else
-		strcpy(result,"UNKNOWN");
+		strlcpy(result, "UNKNOWN", maxtyplen);
 
 	if ( gserialized_has_m(gser) && ! gserialized_has_z(gser) )
-		strcat(result, "M");
+		strlcat(result, "M", maxtyplen);
 
 	SET_VARSIZE(text_ob, strlen(result) + VARHDRSZ); /* size of string */
 
@@ -184,12 +184,8 @@ Datum geometry_geometrytype(PG_FUNCTION_ARGS)
 	/* Read just the header from the toasted tuple */
 	gser = PG_GETARG_GSERIALIZED_P_SLICE(0, 0, gserialized_max_header_size());
 
-	/* Make it empty string to start */
-	type_str[0] = 0;
-
 	/* Build up the output string */
-	strncat(type_str, "ST_", type_str_len);
-	strncat(type_str, lwtype_name(gserialized_get_type(gser)), type_str_len - 3);
+	snprintf(type_str, sizeof(type_str), "ST_%s", lwtype_name(gserialized_get_type(gser)));
 
 	/* Build a text type to store things in */
 	type_text = cstring_to_text(type_str);

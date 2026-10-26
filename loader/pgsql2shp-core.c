@@ -36,6 +36,7 @@
 #endif
 
 #include "../liblwgeom/liblwgeom.h" /* for LWGEOM struct and funx */
+#include "../liblwgeom/stringbuffer.h"
 #include "../liblwgeom/lwgeom_log.h" /* for LWDEBUG macros */
 
 /* Maximum DBF field width (according to ARCGIS) */
@@ -822,7 +823,7 @@ projFileCreate(SHPDUMPERSTATE *state)
 				/*	on the passed in filename we will strip it off.			*/
 				/* -------------------------------------------------------------------- */
 				pszBasename = (char *) malloc(strlen(pszFilename)+5);
-				strcpy( pszBasename, pszFilename );
+				memcpy( pszBasename, pszFilename, strlen(pszFilename)+1 );
 				for ( i = strlen(pszBasename)-1;
 				        i > 0 && pszBasename[i] != '.' && pszBasename[i] != '/'
 				        && pszBasename[i] != '\\';
@@ -1198,51 +1199,28 @@ char *
 ShpDumperGetConnectionStringFromConn(SHPCONNECTIONCONFIG *conn)
 {
 	char *connstring;
-	int connlen;
-
-	connlen = 64 +
-		(conn->host ? strlen(conn->host) : 0) + (conn->port ? strlen(conn->port) : 0) +
-		(conn->username ? strlen(conn->username) : 0) + (conn->password ? strlen(conn->password) : 0) +
-		(conn->database ? strlen(conn->database) : 0);
-
-	connstring = malloc(connlen);
-	memset(connstring, 0, connlen);
+	stringbuffer_t *sb = stringbuffer_create();
 
 	if (conn->host)
-	{
-		strcat(connstring, " host=");
-		strcat(connstring, conn->host);
-	}
+		stringbuffer_aprintf(sb, " host=%s", conn->host);
 
 	if (conn->port)
-	{
-		strcat(connstring, " port=");
-		strcat(connstring, conn->port);
-	}
+		stringbuffer_aprintf(sb, " port=%s", conn->port);
 
 	if (conn->username)
-	{
-		strcat(connstring, " user=");
-		strcat(connstring, conn->username);
-	}
+		stringbuffer_aprintf(sb, " user=%s", conn->username);
 
 	if (conn->password)
-	{
-		strcat(connstring, " password='");
-		strcat(connstring, conn->password);
-		strcat(connstring, "'");
-	}
+		stringbuffer_aprintf(sb, " password='%s'", conn->password);
 
 	if (conn->database)
-	{
-		strcat(connstring, " dbname=");
-		strcat(connstring, conn->database);
-	}
+		stringbuffer_aprintf(sb, " dbname=%s", conn->database);
 
 	if ( ! getenv("PGCLIENTENCODING") )
-	{
-		strcat(connstring, " client_encoding=UTF8");
-	}
+		stringbuffer_aprintf(sb, " client_encoding=UTF8");
+
+	connstring = strdup(stringbuffer_getstring(sb));
+	stringbuffer_destroy(sb);
 
 	return connstring;
 }
@@ -1542,8 +1520,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 
 		/* Limit dbf field name to 10-digits */
 		dbffieldname = malloc(11);
-		strncpy(dbffieldname, ptr, 10);
-		dbffieldname[10] = '\0';
+		snprintf(dbffieldname, 11, "%s", ptr);
 
 		/* If a column map file has been passed in,
 		 * use this to create the dbf field name from
@@ -1552,8 +1529,7 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 		  const char *mapped = colmap_dbf_by_pg(&state->column_map, dbffieldname);
 		  if (mapped)
 		  {
-			  strncpy(dbffieldname, mapped, 10);
-			  dbffieldname[10] = '\0';
+			  snprintf(dbffieldname, 11, "%s", mapped);
 			}
 		}
 
@@ -1588,7 +1564,8 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 				buf[255] = '\0';
 			}
 			/* Note: we concatenate all warnings from the main loop as this is useful information */
-			strncat(state->message, buf, SHPDUMPERMSGLEN - strlen(state->message) - 1);
+			if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
+				snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 
 			ret = SHPDUMPERWARN;
 		}
@@ -1780,7 +1757,8 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 				/* Note: we concatenate all warnings from the main loop as this is useful information */
 				snprintf(buf, 256, _("Warning: values of field '%s' exceeding maximum dbf field width (%d) "
 					"will be truncated.\n"), dbffieldname, MAX_DBF_FIELD_SIZE);
-				strncat(state->message, buf, SHPDUMPERMSGLEN - strlen(state->message));
+				if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
+					snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 				dbffieldsize = MAX_DBF_FIELD_SIZE;
 
 				ret = SHPDUMPERWARN;
@@ -1833,8 +1811,9 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 		{
 			/* No geo* column specified so we can only create the DBF section -
 			   but let's issue a warning... */
-			snprintf(buf, 256, _("No geometry column found.\nThe DBF file will be created but not the shx or shp files.\n"));
-			strncat(state->message, buf, SHPDUMPERMSGLEN - strlen(state->message));
+			snprintf(buf, sizeof(buf), _("No geometry column found.\nThe DBF file will be created but not the shx or shp files.\n"));
+			if (SHPDUMPERMSGLEN > (strlen(state->message) + 1))
+				snprintf(state->message + strlen(state->message), SHPDUMPERMSGLEN - strlen(state->message), "%s", buf);
 
 			state->shp = NULL;
 
@@ -1854,86 +1833,62 @@ ShpDumperOpenTable(SHPDUMPERSTATE *state)
 	}
 
 
-	/* Now we have the complete list of fieldnames, let's generate the SQL query. First let's make sure
-	   we reserve enough space for tables with lots of columns */
-	j = 0;
-	/*TODO: this really should be rewritten to use stringbuffer */
-	for (i = 0; i < state->fieldcount; i++)
-		j += strlen( state->pgfieldnames[i]) + 10;	/*add extra space for the quotes to quote identify and any embedded quotes that may need escaping */
-
-	state->main_scan_query = malloc(1024 + j);
-
-	sprintf(state->main_scan_query, "DECLARE cur ");
-	if (state->config->binary)
-		strcat(state->main_scan_query, "BINARY ");
-
-	strcat(state->main_scan_query, "CURSOR FOR SELECT ");
-
-	for (i = 0; i < state->fieldcount; i++)
+	/* Now we have the complete list of fieldnames, let's generate the SQL query. */
 	{
-		/* Comma-separated column names */
-		if (i > 0)
-			strcat(state->main_scan_query, ",");
+		stringbuffer_t *sb = stringbuffer_create();
 
+		stringbuffer_aprintf(sb, "DECLARE cur ");
 		if (state->config->binary)
-			sprintf(buf, "%s::text", quote_identifier(state->pgfieldnames[i]) ) ;
+			stringbuffer_aprintf(sb, "BINARY ");
+
+		stringbuffer_aprintf(sb, "CURSOR FOR SELECT ");
+
+		for (i = 0; i < state->fieldcount; i++)
+		{
+			/* Comma-separated column names */
+			if (i > 0)
+				stringbuffer_aprintf(sb, ",");
+
+			if (state->config->binary)
+				stringbuffer_aprintf(sb, "%s::text", quote_identifier(state->pgfieldnames[i]));
+			else
+				stringbuffer_aprintf(sb, "%s", quote_identifier(state->pgfieldnames[i]));
+		}
+
+		/* If we found a valid geometry/geography column then use it */
+		if (state->geo_col_name)
+		{
+			/* If this is the (only) column, no need for the initial comma */
+			if (state->fieldcount > 0)
+				stringbuffer_aprintf(sb, ",");
+
+			if (state->big_endian)
+			{
+				if (state->pgis_major_version > 0)
+					stringbuffer_aprintf(sb, "ST_asEWKB(ST_SetSRID(%s::geometry, 0), 'XDR') AS _geoX", quote_identifier(state->geo_col_name));
+				else
+					stringbuffer_aprintf(sb, "asbinary(%s::geometry, 'XDR') AS _geoX", quote_identifier(state->geo_col_name));
+			}
+			else /* little_endian */
+			{
+				if (state->pgis_major_version > 0)
+					stringbuffer_aprintf(sb, "ST_AsEWKB(ST_SetSRID(%s::geometry, 0), 'NDR') AS _geoX", quote_identifier(state->geo_col_name));
+				else
+					stringbuffer_aprintf(sb, "asbinary(%s::geometry, 'NDR') AS _geoX", quote_identifier(state->geo_col_name));
+			}
+		}
+
+		if (state->schema)
+			stringbuffer_aprintf(sb, " FROM \"%s\".\"%s\"", state->schema, state->table);
 		else
-			sprintf(buf, "%s", quote_identifier(state->pgfieldnames[i]) );
+			stringbuffer_aprintf(sb, " FROM \"%s\"", state->table);
 
-		strcat(state->main_scan_query, buf);
-	}
+		/* Order by 'gid' (if found) */
+		if (gidfound)
+			stringbuffer_aprintf(sb, " ORDER BY \"gid\"");
 
-	/* If we found a valid geometry/geography column then use it */
-	if (state->geo_col_name)
-	{
-		/* If this is the (only) column, no need for the initial comma */
-		if (state->fieldcount > 0)
-			strcat(state->main_scan_query, ",");
-
-		if (state->big_endian)
-		{
-			if (state->pgis_major_version > 0)
-			{
-				sprintf(buf, "ST_asEWKB(ST_SetSRID(%s::geometry, 0), 'XDR') AS _geoX", quote_identifier(state->geo_col_name) );
-			}
-			else
-			{
-				sprintf(buf, "asbinary(%s::geometry, 'XDR') AS _geoX",
-					quote_identifier(state->geo_col_name) );
-			}
-		}
-		else /* little_endian */
-		{
-			if (state->pgis_major_version > 0)
-			{
-				sprintf(buf, "ST_AsEWKB(ST_SetSRID(%s::geometry, 0), 'NDR') AS _geoX", quote_identifier(state->geo_col_name) ) ;
-			}
-			else
-			{
-				sprintf(buf, "asbinary(%s::geometry, 'NDR') AS _geoX",
-					quote_identifier(state->geo_col_name) );
-			}
-		}
-
-		strcat(state->main_scan_query, buf);
-	}
-
-	if (state->schema)
-	{
-		sprintf(buf, " FROM \"%s\".\"%s\"", state->schema, state->table);
-	}
-	else
-	{
-		sprintf(buf, " FROM \"%s\"", state->table);
-	}
-
-	strcat(state->main_scan_query, buf);
-
-	/* Order by 'gid' (if found) */
-	if (gidfound)
-	{
-		sprintf(buf, " ORDER BY \"gid\"");
-		strcat(state->main_scan_query, buf);
+		state->main_scan_query = strdup(stringbuffer_getstring(sb));
+		stringbuffer_destroy(sb);
 	}
 
 	/* Now we've finished with the result set, we can dispose of it */
@@ -2093,7 +2048,8 @@ int ShpLoaderGenerateShapeRow(SHPDUMPERSTATE *state)
 					copy directly to hexewkb */
 					hexewkb_len = PQgetlength(state->fetchres, state->curresrow, geocolnum);
 					hexewkb = malloc(hexewkb_len + 1);
-					strncpy(hexewkb, val, hexewkb_len + 1);
+					memcpy(hexewkb, val, hexewkb_len);
+					hexewkb[hexewkb_len] = '\0';
 				}
 			}
 			else /* binary */

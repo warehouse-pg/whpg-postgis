@@ -401,7 +401,7 @@ char* GetProj4StringSPI(int srid)
      */
 	char *proj4_string = getProj4StringStatic(srid);
 	if (proj4_string != NULL) {
-		strncpy(proj_str, proj4_string, maxproj4len - 1);
+		snprintf(proj_str, maxproj4len, "%s", proj4_string);
 		return proj_str;
 	}
 
@@ -444,7 +444,7 @@ char* GetProj4StringSPI(int srid)
 		if ( proj4text )
 		{
 			/* Make a projection object out of it */
-			strncpy(proj_str, proj4text, maxproj4len - 1);
+			snprintf(proj_str, maxproj4len, "%s", proj4text);
 		}
 		else
 		{
@@ -524,27 +524,27 @@ static char* GetProj4String(int srid)
 		/* Lambert Azimuthal Equal Area South Pole */
 		else if ( id == SRID_SOUTH_LAMBERT )
 		{
-			strncpy(proj_str, "+proj=laea +lat_0=-90 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxproj4len );
+			snprintf(proj_str, maxproj4len, "%s", "+proj=laea +lat_0=-90 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs");
 		}
 		/* Polar Sterographic South */
 		else if ( id == SRID_SOUTH_STEREO )
 		{
-			strncpy(proj_str, "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxproj4len);
+			snprintf(proj_str, maxproj4len, "%s", "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs");
 		}
 		/* Lambert Azimuthal Equal Area North Pole */
 		else if ( id == SRID_NORTH_LAMBERT )
 		{
-			strncpy(proj_str, "+proj=laea +lat_0=90 +lon_0=-40 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxproj4len );
+			snprintf(proj_str, maxproj4len, "%s", "+proj=laea +lat_0=90 +lon_0=-40 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs");
 		}
 		/* Polar Stereographic North */
 		else if ( id == SRID_NORTH_STEREO )
 		{
-			strncpy(proj_str, "+proj=stere +lat_0=90 +lat_ts=71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxproj4len );
+			snprintf(proj_str, maxproj4len, "%s", "+proj=stere +lat_0=90 +lat_ts=71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs");
 		}
 		/* World Mercator */
 		else if ( id == SRID_WORLD_MERCATOR )
 		{
-			strncpy(proj_str, "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", maxproj4len );
+			snprintf(proj_str, maxproj4len, "%s", "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs");
 		}
 		else
 		{

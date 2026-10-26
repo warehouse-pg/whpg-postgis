@@ -247,6 +247,27 @@ lwfree(void *mem)
 }
 
 /*
+ * Append at most n bytes of src to the NUL-terminated string in dst,
+ * never writing past dstsize bytes and always leaving dst NUL-terminated.
+ * A bounded replacement for strcat/strncat.
+ */
+void
+lwstr_append(char *dst, size_t dstsize, const char *src, size_t n)
+{
+	size_t dlen = strlen(dst);
+	size_t slen = 0;
+
+	if (dlen >= dstsize)
+		return;
+	while (slen < n && src[slen] != '\0')
+		slen++;
+	if (slen > dstsize - 1 - dlen)
+		slen = dstsize - 1 - dlen;
+	memcpy(dst + dlen, src, slen);
+	dst[dlen + slen] = '\0';
+}
+
+/*
  * Returns a new string which contains a maximum of maxlength characters starting
  * from startpos and finishing at endpos (0-based indexing). If the string is
  * truncated then the first or last characters are replaced by "..." as
@@ -274,7 +295,7 @@ char *lwmessage_truncate(char *str, int startpos, int endpos, int maxlength, int
 		if (endpos - startpos < maxlength)
 		{
 			outstart = str + startpos;
-			strncat(output, outstart, endpos - startpos + 1);
+			lwstr_append(output, maxlength + 4, outstart, endpos - startpos + 1);
 		}
 		else
 		{
@@ -282,13 +303,13 @@ char *lwmessage_truncate(char *str, int startpos, int endpos, int maxlength, int
 			{
 				/* Add "..." prefix */
 				outstart = str + endpos + 1 - maxlength + 3;
-				strncat(output, "...", 4);
-				strncat(output, outstart, maxlength - 3);
+				lwstr_append(output, maxlength + 4, "...", 3);
+				lwstr_append(output, maxlength + 4, outstart, maxlength - 3);
 			}
 			else
 			{
 				/* maxlength is too small; just output "..." */
-				strncat(output, "...", 4);
+				lwstr_append(output, maxlength + 4, "...", 3);
 			}
 		}
 	}
@@ -300,7 +321,7 @@ char *lwmessage_truncate(char *str, int startpos, int endpos, int maxlength, int
 		if (endpos - startpos < maxlength)
 		{
 			outstart = str + startpos;
-			strncat(output, outstart, endpos - startpos + 1);
+			lwstr_append(output, maxlength + 4, outstart, endpos - startpos + 1);
 		}
 		else
 		{
@@ -308,13 +329,13 @@ char *lwmessage_truncate(char *str, int startpos, int endpos, int maxlength, int
 			{
 				/* Add "..." suffix */
 				outstart = str + startpos;
-				strncat(output, outstart, maxlength - 3);
-				strncat(output, "...", 4);
+				lwstr_append(output, maxlength + 4, outstart, maxlength - 3);
+				lwstr_append(output, maxlength + 4, "...", 3);
 			}
 			else
 			{
 				/* maxlength is too small; just output "..." */
-				strncat(output, "...", 4);
+				lwstr_append(output, maxlength + 4, "...", 3);
 			}
 		}
 	}

@@ -1773,6 +1773,7 @@ pgui_action_export(GtkWidget *widget, gpointer data)
 	gpointer gptr;
 	GtkTreeIter iter;
 	char *output_shapefile, *orig_shapefile;
+	size_t output_shapefile_len;
   char progress_text[GUIMSG_LINE_MAXLEN+1];
 	gchar *folder_path;
 
@@ -1842,10 +1843,9 @@ pgui_action_export(GtkWidget *widget, gpointer data)
 
 		/* Save the original shapefile name, then create a temporary version containing the full path */
 		orig_shapefile = dumper_table_config->shp_file;
-		output_shapefile = malloc(strlen(folder_path) + strlen(dumper_table_config->shp_file) + 2);
-		strcpy(output_shapefile, folder_path);
-		strcat(output_shapefile, G_DIR_SEPARATOR_S);
-		strcat(output_shapefile, dumper_table_config->shp_file);
+		output_shapefile_len = strlen(folder_path) + strlen(dumper_table_config->shp_file) + 2;
+		output_shapefile = malloc(output_shapefile_len);
+		snprintf(output_shapefile, output_shapefile_len, "%s%s%s", folder_path, G_DIR_SEPARATOR_S, dumper_table_config->shp_file);
 
 		dumper_table_config->shp_file = output_shapefile;
 
