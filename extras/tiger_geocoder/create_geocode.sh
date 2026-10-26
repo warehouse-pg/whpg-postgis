@@ -2,9 +2,12 @@
 PGPORT=5432
 PGHOST=localhost
 PGUSER=postgres
-PGPASSWORD=yourpasswordhere
+# Do not put the database password in this file or in PGPASSWORD: it would
+# end up in the process environment and in version control. Use ~/.pgpass
+# (chmod 600) or PGPASSFILE instead.
+export PGPORT PGHOST PGUSER
 THEDB=geocoder
-PSQL_CMD= /usr/lib/postgresql/12/bin/psql
+PSQL_CMD=/usr/lib/postgresql/12/bin/psql
 PGCONTRIB=/usr/share/postgresql/12/contrib
 #if you are on 9.1+ use the CREATE EXTENSION syntax instead
 ${PSQL_CMD} -d "${THEDB}" -f "${PGCONTRIB}/fuzzystrmatch.sql"

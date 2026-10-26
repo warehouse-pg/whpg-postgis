@@ -870,7 +870,7 @@ rt_raster rt_raster_gdal_warp(
 	arg->wopts->pTransformerArg = arg->transform.arg.transform;
 	arg->wopts->papszWarpOptions = (char **) CPLMalloc(sizeof(char *) * 2);
 	arg->wopts->papszWarpOptions[0] = (char *) CPLMalloc(sizeof(char) * (strlen("INIT_DEST=NO_DATA") + 1));
-	strcpy(arg->wopts->papszWarpOptions[0], "INIT_DEST=NO_DATA");
+	memcpy(arg->wopts->papszWarpOptions[0], "INIT_DEST=NO_DATA", sizeof("INIT_DEST=NO_DATA"));
 	arg->wopts->papszWarpOptions[1] = NULL;
 
 	/* set band mapping */
@@ -934,9 +934,6 @@ rt_raster rt_raster_gdal_warp(
 		_rti_warp_arg_destroy(arg);
 		return NULL;
 	}
-	/*
-	GDALSetDescription(arg->dst.ds, "/tmp/warped.vrt");
-	*/
 	GDALFlushCache(arg->dst.ds);
 	RASTER_DEBUG(3, "Raster warped");
 

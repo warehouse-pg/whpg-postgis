@@ -177,6 +177,7 @@ $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_platform' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_platform(os varchar(50) PRIMARY KEY, declare_sect text, pgbin text, wget text, unzip_command text, psql text, path_sep text, loader text, environ_set_command text, county_process_command text);
+      COMMENT ON TABLE loader_platform IS 'Shell fragments that Loader_Generate_Script and Loader_Generate_Nation_Script paste verbatim into the scripts they produce. Anyone who can write this table can inject commands into those scripts, so keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';
@@ -201,7 +202,7 @@ set PGBIN=C:\\Program Files\\PostgreSQL\\15\\bin\\
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+rem Put the password in %APPDATA%\\postgresql\\pgpass.conf instead of setting PGPASSWORD
 set PGDATABASE=geocoder
 set PSQL="%PGBIN%psql"
 set SHP2PGSQL="%PGBIN%shp2pgsql"
@@ -224,7 +225,7 @@ export PGBIN=/usr/lib/postgresql/15/bin
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Put the password in ~/.pgpass (chmod 600) instead of exporting PGPASSWORD
 export PGDATABASE=geocoder
 PSQL=${PGBIN}/psql
 SHP2PGSQL=shp2pgsql
@@ -244,6 +245,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_variables' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_variables(tiger_year varchar(4) PRIMARY KEY, website_root text, staging_fold text, data_schema text, staging_schema text);
+      COMMENT ON TABLE loader_variables IS 'Values pasted verbatim into the shell scripts produced by Loader_Generate_Script and Loader_Generate_Nation_Script. Keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';
@@ -611,7 +613,7 @@ BEGIN
 -- Add all the fields except geoid and gid
 -- Assume all the columns are in same order as target
 	SELECT staging_schema, data_schema INTO var_staging_schema, var_data_schema FROM loader_variables;
-	var_sql := 'INSERT INTO ' || var_data_schema || '.' || quote_ident(param_target_table) || '(' ||
+	var_sql := 'INSERT INTO ' || quote_ident(var_data_schema) || '.' || quote_ident(param_target_table) || '(' ||
 			array_to_string(ARRAY(SELECT quote_ident(column_name::text)
 				FROM information_schema.columns
 				 WHERE table_name = param_target_table
@@ -624,7 +626,7 @@ BEGIN
 					AND table_schema = var_staging_schema
 					AND column_name <> ALL( param_columns_exclude)
                     ORDER BY column_name ), ',') ||' FROM '
-					|| var_staging_schema || '.' || param_staging_table || ';';
+					|| quote_ident(var_staging_schema) || '.' || quote_ident(param_staging_table) || ';';
 	RAISE NOTICE '%', var_sql;
 	EXECUTE (var_sql);
 	GET DIAGNOSTICS var_num_records = ROW_COUNT;

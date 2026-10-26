@@ -842,7 +842,6 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 	SHPObject *obj = NULL;
 	int ret = SHPLOADEROK;
 	char name[MAXFIELDNAMELEN];
-	char name2[MAXFIELDNAMELEN];
 	DBFFieldType type = FTInvalid;
 	char *utf8str;
 
@@ -1096,11 +1095,7 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 	state->widths = malloc(state->num_fields * sizeof(int));
 	state->precisions = malloc(state->num_fields * sizeof(int));
 	state->pgfieldtypes = malloc(state->num_fields * sizeof(char *));
-	state->col_names = malloc((state->num_fields + 2) * sizeof(char) * MAXFIELDNAMELEN);
-
-	strcpy(state->col_names, "" );
-	/* Generate a string of comma separated column names of the form "col1, col2 ... colN" for the SQL
-	   insertion string */
+	state->col_names = NULL;
 
 	for (int j = 0; j < state->num_fields; j++)
 	{
@@ -1133,8 +1128,7 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 				return SHPLOADERERR;
 			}
 
-			strncpy(name, utf8str, MAXFIELDNAMELEN);
-			name[MAXFIELDNAMELEN-1] = '\0';
+			snprintf(name, MAXFIELDNAMELEN, "%s", utf8str);
 			free(utf8str);
 		}
 
@@ -1144,8 +1138,7 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 		  const char *mapped = colmap_pg_by_dbf(&state->column_map, name);
 		  if (mapped)
 		  {
-			  strncpy(name, mapped, MAXFIELDNAMELEN);
-			  name[MAXFIELDNAMELEN-1] = '\0';
+			  snprintf(name, MAXFIELDNAMELEN, "%s", mapped);
 			}
 		}
 
@@ -1170,15 +1163,10 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 		        ! strcmp(name, "primary") ||
 		        ! strcmp(name, "oid") || ! strcmp(name, "ctid"))
 		{
-			size_t len = strlen(name);
-			if (len > (MAXFIELDNAMELEN - 2))
-				len = MAXFIELDNAMELEN - 2;
-			strncpy(name2 + 2, name, len);
-			name2[MAXFIELDNAMELEN-1] = '\0';
-			name2[len + 2] = '\0';
-			name2[0] = '_';
-			name2[1] = '_';
-			strcpy(name, name2);
+			char tmp[MAXFIELDNAMELEN] = "__";
+			memcpy(tmp+2, name, MAXFIELDNAMELEN-2);
+			tmp[MAXFIELDNAMELEN-1] = '\0';
+			memcpy(name, tmp, MAXFIELDNAMELEN);
 		}
 
 		/* Avoid duplicating field names */
@@ -1186,7 +1174,7 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 		{
 			if (strcmp(state->field_names[z], name) == 0)
 			{
-				strncat(name, "__", MAXFIELDNAMELEN - 1);
+				snprintf(name + strlen(name), MAXFIELDNAMELEN - strlen(name), "__");
 				snprintf(name + strlen(name),
 					 MAXFIELDNAMELEN - 1 - strlen(name),
 					 "%i",
@@ -1251,23 +1239,27 @@ ShpLoaderOpenShape(SHPLOADERSTATE *state)
 			return SHPLOADERERR;
 		}
 
-		strcat(state->col_names, "\"");
-		strcat(state->col_names, name);
-
-		if (state->config->readshape == 1 || j < (state->num_fields - 1))
-		{
-			/* Don't include last comma if its the last field and no geometry field will follow */
-			strcat(state->col_names, "\",");
-		}
-		else
-		{
-			strcat(state->col_names, "\"");
-		}
 	}
 
-	/* Append the geometry column if required */
-	if (state->config->readshape == 1)
-		strcat(state->col_names, state->geo_col);
+	/* Generate a string of comma separated column names of the form "col1, col2 ... colN" for the SQL
+	   insertion string */
+	{
+		stringbuffer_t *sb = stringbuffer_create();
+		for (int j = 0; j < state->num_fields; j++)
+		{
+			stringbuffer_aprintf(sb, "\"%s\"", state->field_names[j]);
+			/* Don't include last comma if its the last field and no geometry field will follow */
+			if (state->config->readshape == 1 || j < (state->num_fields - 1))
+				stringbuffer_append(sb, ",");
+		}
+
+		/* Append the geometry column if required */
+		if (state->config->readshape == 1)
+			stringbuffer_append(sb, state->geo_col);
+
+		state->col_names = strdup(stringbuffer_getstring(sb));
+		stringbuffer_destroy(sb);
+	}
 
 	/* Return status */
 	return ret;
@@ -1476,8 +1468,7 @@ ShpLoaderGetSQLHeader(SHPLOADERSTATE *state, char **strheader)
 	}
 
 	/* Copy the string buffer into a new string, destroying the string buffer */
-	ret = (char *)malloc(strlen((char *)stringbuffer_getstring(sb)) + 1);
-	strcpy(ret, (char *)stringbuffer_getstring(sb));
+	ret = strdup(stringbuffer_getstring(sb));
 	stringbuffer_destroy(sb);
 
 	*strheader = ret;
@@ -1516,8 +1507,7 @@ ShpLoaderGetSQLCopyStatement(SHPLOADERSTATE *state, char **strheader)
 		}
 
 		/* Copy the string buffer into a new string, destroying the string buffer */
-		ret = (char *)malloc(strlen((char *)stringbuffer_getstring(sb)) + 1);
-		strcpy(ret, (char *)stringbuffer_getstring(sb));
+		ret = strdup(stringbuffer_getstring(sb));
 		stringbuffer_destroy(sb);
 
 		*strheader = ret;
@@ -1702,8 +1692,7 @@ ShpLoaderGenerateSQLRowStatement(SHPLOADERSTATE *state, int item, char **strreco
 					stringbuffer_destroy(sb);
 					return SHPLOADERERR;
 				}
-				strncpy(val, utf8str, MAXVALUELEN);
-				val[MAXVALUELEN-1] = '\0';
+				snprintf(val, MAXVALUELEN, "%s", utf8str);
 				free(utf8str);
 
 			}
@@ -1848,8 +1837,7 @@ done_cell:
 
 
 	/* Copy the string buffer into a new string, destroying the string buffer */
-	ret = (char *)malloc(strlen((char *)stringbuffer_getstring(sb)) + 1);
-	strcpy(ret, (char *)stringbuffer_getstring(sb));
+	ret = strdup(stringbuffer_getstring(sb));
 	stringbuffer_destroy(sb);
 
 	*strrecord = ret;
@@ -1940,8 +1928,7 @@ ShpLoaderGetSQLFooter(SHPLOADERSTATE *state, char **strfooter)
 	}
 
 	/* Copy the string buffer into a new string, destroying the string buffer */
-	ret = (char *)malloc(strlen((char *)stringbuffer_getstring(sb)) + 1);
-	strcpy(ret, (char *)stringbuffer_getstring(sb));
+	ret = strdup(stringbuffer_getstring(sb));
 	stringbuffer_destroy(sb);
 
 	*strfooter = ret;

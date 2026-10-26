@@ -191,7 +191,7 @@ set PGBIN=C:\\Program Files\\PostgreSQL\\13\\bin\\
 set PGPORT=5432
 set PGHOST=localhost
 set PGUSER=postgres
-set PGPASSWORD=yourpasswordhere
+rem Put the password in %APPDATA%\\postgresql\\pgpass.conf instead of setting PGPASSWORD
 set PGDATABASE=geocoder
 set PSQL="%PGBIN%psql"
 set SHP2PGSQL="%PGBIN%shp2pgsql"
@@ -214,7 +214,7 @@ export PGBIN=/usr/lib/postgresql/13/bin
 export PGPORT=5432
 export PGHOST=localhost
 export PGUSER=postgres
-export PGPASSWORD=yourpasswordhere
+# Put the password in ~/.pgpass (chmod 600) instead of exporting PGPASSWORD
 export PGDATABASE=geocoder
 PSQL=${PGBIN}/psql
 SHP2PGSQL=shp2pgsql
@@ -521,7 +521,7 @@ BEGIN
 -- Add all the fields except geoid and gid
 -- Assume all the columns are in same order as target
 	SELECT staging_schema, data_schema INTO var_staging_schema, var_data_schema FROM loader_variables;
-	var_sql := 'INSERT INTO ' || var_data_schema || '.' || quote_ident(param_target_table) || '(' ||
+	var_sql := 'INSERT INTO ' || quote_ident(var_data_schema) || '.' || quote_ident(param_target_table) || '(' ||
 			array_to_string(ARRAY(SELECT quote_ident(column_name::text)
 				FROM information_schema.columns
 				 WHERE table_name = param_target_table
@@ -534,7 +534,7 @@ BEGIN
 					AND table_schema = var_staging_schema
 					AND column_name <> ALL( param_columns_exclude)
                     ORDER BY column_name ), ',') ||' FROM '
-					|| var_staging_schema || '.' || param_staging_table || ';';
+					|| quote_ident(var_staging_schema) || '.' || quote_ident(param_staging_table) || ';';
 	RAISE NOTICE '%', var_sql;
 	EXECUTE (var_sql);
 	GET DIAGNOSTICS var_num_records = ROW_COUNT;

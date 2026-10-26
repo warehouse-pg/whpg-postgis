@@ -117,18 +117,20 @@ Datum pgis_tablefromflatgeobuf(PG_FUNCTION_ARGS)
 		char *pgtype = get_pgtype(column_type);
 		size_t len = strlen(name) + 1 + strlen(pgtype) + 1;
 		column_defs[i] = palloc0(sizeof(char) * len);
-		strcat(column_defs[i], name);
-		strcat(column_defs[i], " ");
-		strcat(column_defs[i], pgtype);
+		snprintf(column_defs[i], len, "%s %s", name, pgtype);
 		column_defs_total_len += len;
 	}
-	column_defs_str = palloc0(sizeof(char) * column_defs_total_len + (ctx->ctx->columns_size * 2) + 2 + 1);
-	if (ctx->ctx->columns_size > 0)
-		strcat(column_defs_str, ", ");
-	for (i = 0; i < ctx->ctx->columns_size; i++) {
-		strcat(column_defs_str, column_defs[i]);
-		if (i < ctx->ctx->columns_size - 1)
-			strcat(column_defs_str, ", ");
+	{
+		size_t str_len = column_defs_total_len + (ctx->ctx->columns_size * 2) + 2 + 1;
+		size_t pos = 0;
+		column_defs_str = palloc0(sizeof(char) * str_len);
+		if (ctx->ctx->columns_size > 0)
+			pos += snprintf(column_defs_str + pos, str_len - pos, ", ");
+		for (i = 0; i < ctx->ctx->columns_size; i++) {
+			pos += snprintf(column_defs_str + pos, str_len - pos, "%s", column_defs[i]);
+			if (i < ctx->ctx->columns_size - 1)
+				pos += snprintf(column_defs_str + pos, str_len - pos, ", ");
+		}
 	}
 
 	POSTGIS_DEBUGF(2, "column_defs_str %s", column_defs_str);

@@ -206,21 +206,17 @@ Datum standardize_address1(PG_FUNCTION_ARGS)
     if (! paddr-> address1)
         elog(ERROR, "standardize_address() could not parse the address into components.");
 
-    k = 1;
-    if (paddr->city) k += strlen(paddr->city) + 1;
-    if (paddr->st)   k += strlen(paddr->st)   + 1;
-    if (paddr->zip)  k += strlen(paddr->zip)  + 1;
-    if (paddr->cc)   k += strlen(paddr->cc)   + 1;
-
     /* create micro and macro from paddr */
     micro = pstrdup(paddr->address1);
-    macro = (char *) palloc(k * sizeof(char));
-
-    *macro = '\0';
-    if (paddr->city) { strcat(macro, paddr->city); strcat(macro, ","); }
-    if (paddr->st  ) { strcat(macro, paddr->st  ); strcat(macro, ","); }
-    if (paddr->zip ) { strcat(macro, paddr->zip ); strcat(macro, ","); }
-    if (paddr->cc  ) { strcat(macro, paddr->cc  ); strcat(macro, ","); }
+    {
+        StringInfoData macrobuf;
+        initStringInfo(&macrobuf);
+        if (paddr->city) appendStringInfo(&macrobuf, "%s,", paddr->city);
+        if (paddr->st  ) appendStringInfo(&macrobuf, "%s,", paddr->st);
+        if (paddr->zip ) appendStringInfo(&macrobuf, "%s,", paddr->zip);
+        if (paddr->cc  ) appendStringInfo(&macrobuf, "%s,", paddr->cc);
+        macro = macrobuf.data;
+    }
 
     DBG("calling GetStdUsingFCInfo(fcinfo, '%s', '%s', '%s')", lextab, gaztab, rultab);
     std = GetStdUsingFCInfo(fcinfo, lextab, gaztab, rultab);
