@@ -1544,6 +1544,11 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 			&& loader_file_config->shp_file[i - 1] != '\\' && loader_file_config->shp_file[i - 1] != '/'; i--);
 
 		progress_shapefile = strdup(&loader_file_config->shp_file[i]);
+		if (!progress_shapefile)
+		{
+			ret = SHPLOADERERR;
+			goto import_cleanup;
+		}
 
 		/* Display the progress dialog */
 		snprintf(progress_text, GUIMSG_LINE_MAXLEN, _("Importing shapefile %s (%d records)..."), progress_shapefile, ShpLoaderGetRecordCount(state));
@@ -1739,7 +1744,10 @@ import_cleanup:
 
 		/* Tidy up */
 		if (progress_shapefile)
+		{
 			free(progress_shapefile);
+			progress_shapefile = NULL;
+		}
 
 		/* Get next entry */
 		is_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(import_file_list_store), &iter);
