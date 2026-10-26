@@ -146,6 +146,7 @@ $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_platform' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_platform(os varchar(50) PRIMARY KEY, declare_sect text, pgbin text, wget text, unzip_command text, psql text, path_sep text, loader text, environ_set_command text, county_process_command text) DISTRIBUTED REPLICATED;
+      COMMENT ON TABLE loader_platform IS 'Shell fragments that Loader_Generate_Script and Loader_Generate_Nation_Script paste verbatim into the scripts they produce. Anyone who can write this table can inject commands into those scripts, so keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';
@@ -207,6 +208,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'loader_variables' AND table_schema = 'tiger') THEN
       CREATE TABLE loader_variables(tiger_year varchar(4) PRIMARY KEY, website_root text, staging_fold text, data_schema text, staging_schema text);
+      COMMENT ON TABLE loader_variables IS 'Values pasted verbatim into the shell scripts produced by Loader_Generate_Script and Loader_Generate_Nation_Script. Keep it writable by trusted administrators only.';
   END IF;
 END
 $$ LANGUAGE 'plpgsql';
@@ -489,7 +491,7 @@ BEGIN
 -- Add all the fields except geoid and gid
 -- Assume all the columns are in same order as target
 	SELECT staging_schema, data_schema INTO var_staging_schema, var_data_schema FROM loader_variables;
-	var_sql := 'INSERT INTO ' || var_data_schema || '.' || quote_ident(param_target_table) || '(' ||
+	var_sql := 'INSERT INTO ' || quote_ident(var_data_schema) || '.' || quote_ident(param_target_table) || '(' ||
 			array_to_string(ARRAY(SELECT quote_ident(column_name::text)
 				FROM information_schema.columns
 				 WHERE table_name = param_target_table

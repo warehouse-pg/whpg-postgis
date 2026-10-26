@@ -276,11 +276,14 @@ trim(const char *input) {
 		input++;
 
 	/* trim right */
-	ptr = ((char *) input) + strlen(input);
-	while (isspace(*--ptr))
-		offset++;
+	len = strlen(input);
+	if (len) {
+		ptr = ((char *) input) + len;
+		while (isspace(*--ptr))
+			offset++;
+	}
 
-	len = strlen(input) - offset + 1;
+	len = len - offset + 1;
 	rtn = rtalloc(sizeof(char) * len);
 	if (NULL == rtn) {
 		rterror(_("trim: Not enough memory"));
@@ -309,11 +312,14 @@ chartrim(const char *input, char *remove) {
 		input++;
 
 	/* trim right */
-	ptr = ((char *) input) + strlen(input);
-	while (strchr(remove, *--ptr) != NULL)
-		offset++;
+	len = strlen(input);
+	if (len) {
+		ptr = ((char *) input) + len;
+		while (strchr(remove, *--ptr) != NULL)
+			offset++;
+	}
 
-	len = strlen(input) - offset + 1;
+	len = len - offset + 1;
 	rtn = rtalloc(sizeof(char) * len);
 	if (NULL == rtn) {
 		rterror(_("chartrim: Not enough memory"));

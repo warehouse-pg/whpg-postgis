@@ -43,7 +43,7 @@ our $PGSQL2SHP = $REGDIR . "/../loader/pgsql2shp";
 our $RASTER2PGSQL = $REGDIR . "/../raster/loader/raster2pgsql";
 # gpdiff.pl ships with the server; locate it through GPHOME rather than a
 # hardcoded install path.
-our $GPHOME = $ENV{"GPHOME"} || die "GPHOME environment variable is not set\n";
+our $GPHOME = $ENV{"GPHOME"} // '';
 our $GPDIFF = "$GPHOME/lib/postgresql/pgxs/src/test/regress/gpdiff.pl";
 our $sysdiff = ( -x $GPDIFF ) && !system("$GPDIFF -b -w -gpd_init " . $REGDIR . "/global_init_file --strip-trailing-cr $0 $0 2> /dev/null");
 
