@@ -268,6 +268,7 @@ trim(const char *input) {
 	char *ptr;
 	uint32_t offset = 0;
 	size_t len = 0;
+	size_t inputlen = 0;
 
 	if (!input)
 		return NULL;
@@ -275,15 +276,19 @@ trim(const char *input) {
 		return (char *) input;
 
 	/* trim left */
-	while (isspace(*input))
+	while (isspace(*input) && *input != '\0')
 		input++;
 
-	/* trim right */
-	ptr = ((char *) input) + strlen(input);
-	while (isspace(*--ptr))
-		offset++;
+	/* trim right; an all-whitespace input is empty by now, so there
+	 * is nothing to walk back over */
+	inputlen = strlen(input);
+	if (inputlen) {
+		ptr = ((char *) input) + inputlen;
+		while (isspace(*--ptr))
+			offset++;
+	}
 
-	len = strlen(input) - offset + 1;
+	len = inputlen - offset + 1;
 	rtn = rtalloc(sizeof(char) * len);
 	if (NULL == rtn) {
 		rterror(_("trim: Not enough memory"));
@@ -301,22 +306,28 @@ chartrim(const char *input, char *remove) {
 	char *ptr = NULL;
 	uint32_t offset = 0;
 	size_t len = 0;
+	size_t inputlen = 0;
 
 	if (!input)
 		return NULL;
 	else if (!*input)
 		return (char *) input;
 
-	/* trim left */
-	while (strchr(remove, *input) != NULL)
+	/* trim left; strchr() matches the terminating NUL, so stop there
+	 * explicitly */
+	while (*input != '\0' && strchr(remove, *input) != NULL)
 		input++;
 
-	/* trim right */
-	ptr = ((char *) input) + strlen(input);
-	while (strchr(remove, *--ptr) != NULL)
-		offset++;
+	/* trim right; nothing to walk back over if the input was all
+	 * removable characters */
+	inputlen = strlen(input);
+	if (inputlen) {
+		ptr = ((char *) input) + inputlen;
+		while (ptr > input && strchr(remove, *--ptr) != NULL)
+			offset++;
+	}
 
-	len = strlen(input) - offset + 1;
+	len = inputlen - offset + 1;
 	rtn = rtalloc(sizeof(char) * len);
 	if (NULL == rtn) {
 		rterror(_("chartrim: Not enough memory"));
