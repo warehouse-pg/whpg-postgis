@@ -81,7 +81,7 @@ main (int argc, char **argv)
 {
 	SHPLOADERCONFIG *config;
 	SHPLOADERSTATE *state;
-	char *header, *footer, *record;
+	char *header = NULL, *footer = NULL, *record = NULL;
 	int c;
 	int ret, i;
 
@@ -390,6 +390,7 @@ main (int argc, char **argv)
 
 			printf("%s", header);
 			free(header);
+			header = NULL;
 		}
 
 		/* Main loop: iterate through all of the records and send them to stdout */
@@ -403,6 +404,7 @@ main (int argc, char **argv)
 				/* Simply display the geometry */
 				printf("%s\n", record);
 				free(record);
+				record = NULL;
 				break;
 
 			case SHPLOADERERR:
@@ -416,6 +418,7 @@ main (int argc, char **argv)
 				fprintf(stderr, "%s\n", state->message);
 				printf("%s\n", record);
 				free(record);
+				record = NULL;
 				break;
 
 			case SHPLOADERRECDELETED:
@@ -446,6 +449,7 @@ main (int argc, char **argv)
 
 	printf("%s", footer);
 	free(footer);
+	footer = NULL;
 
 
 	/* Free the state object */
