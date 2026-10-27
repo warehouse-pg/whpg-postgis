@@ -1542,6 +1542,7 @@ pgui_action_import(GtkWidget *widget, gpointer data)
 		progress_shapefile = strdup(&loader_file_config->shp_file[i]);
 		if (!progress_shapefile)
 		{
+			pgui_logf("%s", _("Out of memory"));
 			ret = SHPLOADERERR;
 			goto import_cleanup;
 		}
